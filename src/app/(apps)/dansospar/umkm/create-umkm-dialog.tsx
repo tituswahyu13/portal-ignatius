@@ -1,17 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createUmkmAction } from "./actions";
+import { createUmkmAction, getKpsByLingkungan } from "./actions";
 
 export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const [selectedLingkungan, setSelectedLingkungan] = useState<string>("");
+  const [kpsList, setKpsList] = useState<any[]>([]);
+  const [isKps, setIsKps] = useState(false);
+
+  // Load KPS when lingkungan changes
+  useEffect(() => {
+    if (!selectedLingkungan) {
+      setKpsList([]);
+      return;
+    }
+
+    const fetchKps = async () => {
+      const data = await getKpsByLingkungan(parseInt(selectedLingkungan));
+      setKpsList(data);
+    };
+    
+    fetchKps();
+  }, [selectedLingkungan]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -50,7 +69,7 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Pilih Lingkungan</Label>
-              <Select name="lingkunganId" required>
+              <Select name="lingkunganId" required value={selectedLingkungan} onValueChange={setSelectedLingkungan}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Lingkungan" />
                 </SelectTrigger>
@@ -67,6 +86,46 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
             </div>
           </div>
 
+          <div className="space-y-4 border p-4 rounded-md bg-muted/20">
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="isKps" 
+                checked={isKps} 
+                onChange={(e) => setIsKps(e.target.checked)} 
+                className="rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="isKps" className="cursor-pointer">Pemilik adalah Keluarga Pra-Sejahtera (KPS)</Label>
+            </div>
+            
+            {isKps ? (
+              <div className="space-y-2">
+                <Label>Pilih Data KPS (Berdasarkan Lingkungan)</Label>
+                <Select name="kpsId">
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedLingkungan ? "Pilih Kepala Keluarga KPS" : "Pilih Lingkungan Dahulu"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kpsList.length === 0 && selectedLingkungan ? (
+                      <SelectItem value="none" disabled>Tidak ada data KPS</SelectItem>
+                    ) : (
+                      kpsList.map((k) => (
+                        <SelectItem key={k.id} value={k.id.toString()}>{k.namaKepalaKeluarga}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Pilih Kepala Keluarga jika UMKM ini terikat dengan data KPS.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Nomor Induk Kependudukan (NIK)</Label>
+                <Input name="nik" placeholder="Masukkan 16 digit NIK" maxLength={16} />
+                <p className="text-xs text-muted-foreground">NIK akan dienkripsi dan disimpan dengan aman.</p>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nama Usaha</Label>
@@ -80,16 +139,16 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
 
           <div className="grid grid-cols-2 gap-4 border p-4 rounded-md bg-muted/20">
             <div className="space-y-2 col-span-2">
-              <h4 className="font-semibold text-sm">Evaluasi Kelayakan</h4>
-              <p className="text-xs text-muted-foreground">Otomatis layak jika Aset ≤ Rp 20.000.000 dan Omset Tahunan ≤ Rp 100.000.000</p>
+              <h4 className="font-semibold text-sm">Evaluasi Kelayakan (Opsional)</h4>
+              <p className="text-xs text-muted-foreground">Otomatis layak jika Aset ≤ Rp 20.000.000 dan Omset Tahunan ≤ Rp 100.000.000, atau jika dikosongkan.</p>
             </div>
             <div className="space-y-2">
               <Label>Total Aset (Rp)</Label>
-              <Input type="number" name="asetTotal" required placeholder="Misal: 5000000" min="0" />
+              <Input type="number" name="asetTotal" placeholder="Misal: 5000000" min="0" />
             </div>
             <div className="space-y-2">
               <Label>Omset Tahunan (Rp)</Label>
-              <Input type="number" name="omsetTahunan" required placeholder="Misal: 30000000" min="0" />
+              <Input type="number" name="omsetTahunan" placeholder="Misal: 30000000" min="0" />
             </div>
           </div>
 

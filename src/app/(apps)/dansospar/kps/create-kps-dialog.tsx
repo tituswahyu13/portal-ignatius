@@ -126,9 +126,26 @@ export function CreateKpsDialog({ lingkungan }: { lingkungan: any[] }) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Alamat Lengkap</Label>
-            <Input name="alamat" required placeholder="Alamat domisili saat ini" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nomor HP/WA (Opsional)</Label>
+              <Input name="noHp" placeholder="0812xxxxxx" />
+            </div>
+            <div className="space-y-2">
+              <Label>Pekerjaan Utama</Label>
+              <Input name="pekerjaan" placeholder="Contoh: Buruh Harian" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Tanggal Lahir</Label>
+              <Input name="tanggalLahir" type="date" />
+            </div>
+            <div className="space-y-2">
+              <Label>Alamat Lengkap</Label>
+              <Input name="alamat" required placeholder="Alamat domisili saat ini" />
+            </div>
           </div>
 
           <div className="border rounded-md p-4 space-y-4 bg-muted/20">

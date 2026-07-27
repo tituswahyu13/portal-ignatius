@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSubjekByLingkungan, createSpbAction } from "../actions";
 
@@ -17,7 +18,7 @@ const KATEGORI_BANTUAN = [
   "Pangruktilaya",
   "Seminari",
   "Bencana",
-  "Peralatan Usaha (UMKM)"
+  "Bantuan Modal Usaha"
 ];
 
 export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], intensis: any[] }) {
@@ -28,11 +29,40 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
   const [selectedLingkungan, setSelectedLingkungan] = useState<string>("");
   const [subjekList, setSubjekList] = useState<any[]>([]);
   
-  const [totalBiaya, setTotalBiaya] = useState(0);
-  const [danaSwadaya, setDanaSwadaya] = useState(0);
-  const [danaLingkungan, setDanaLingkungan] = useState(0);
+  const [totalBiaya, setTotalBiaya] = useState<number | "">("");
+  const [danaSwadaya, setDanaSwadaya] = useState<number | "">("");
+  const [danaLingkungan, setDanaLingkungan] = useState<number | "">("");
   
-  const danaParokiRequested = totalBiaya - danaSwadaya - danaLingkungan;
+  const [kategoriBantuan, setKategoriBantuan] = useState<string>("");
+  const [selectedIntensi, setSelectedIntensi] = useState<string>("");
+
+  const danaParokiRequested = (Number(totalBiaya) || 0) - (Number(danaSwadaya) || 0) - (Number(danaLingkungan) || 0);
+
+  // Auto-select Kas Intensi based on Kategori Bantuan
+  useEffect(() => {
+    if (!kategoriBantuan || intensis.length === 0) return;
+
+    let targetKode = "";
+    switch (kategoriBantuan) {
+      case "Pendidikan": targetKode = "INT-PND"; break;
+      case "Kesehatan": targetKode = "INT-KSH"; break;
+      case "Pangruktilaya": targetKode = "INT-PRT"; break;
+      case "Seminari": targetKode = "INT-SMN"; break;
+      case "Bencana": targetKode = "INT-BNC"; break;
+      case "Bantuan Modal Usaha": targetKode = "INT-APP"; break; // Example: UMKM uses APP
+      case "Pangan":
+      case "Sandang":
+      case "Papan (Bedah Rumah)":
+      default:
+        targetKode = "INT-PPM"; // Default to Papa Miskin
+        break;
+    }
+
+    const matchedIntensi = intensis.find(i => i.kodeAccount === targetKode);
+    if (matchedIntensi) {
+      setSelectedIntensi(matchedIntensi.id.toString());
+    }
+  }, [kategoriBantuan, intensis]);
 
   // Load Subjek when lingkungan or type changes
   useEffect(() => {
@@ -125,7 +155,7 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Kategori Bantuan</Label>
-            <Select name="kategoriBantuan" required>
+            <Select name="kategoriBantuan" required value={kategoriBantuan} onValueChange={setKategoriBantuan}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Kategori" />
               </SelectTrigger>
@@ -138,7 +168,7 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
           </div>
           <div className="space-y-2">
             <Label>Sumber Kas Intensi</Label>
-            <Select name="intensiId" required>
+            <Select name="intensiId" required value={selectedIntensi} onValueChange={setSelectedIntensi}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Kas" />
               </SelectTrigger>
@@ -150,6 +180,31 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
             </Select>
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Keaktifan Umat</Label>
+            <Select name="keaktifanUmat" required>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih Status Keaktifan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Aktif">Aktif</SelectItem>
+                <SelectItem value="Kadangkala Aktif">Kadangkala Aktif</SelectItem>
+                <SelectItem value="Tidak Aktif Sama Sekali">Tidak Aktif Sama Sekali</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Alasan Dimohonkan Bantuan</Label>
+            <Textarea 
+              name="alasanBantuan" 
+              required 
+              placeholder="Jelaskan alasan mengapa umat/subjek tersebut perlu dibantu..." 
+              className="resize-none h-20"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 bg-muted/30 p-4 rounded-lg border">
@@ -158,15 +213,15 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label>Total Biaya Kebutuhan</Label>
-            <Input type="number" name="totalBiaya" required min="1" value={totalBiaya} onChange={(e) => setTotalBiaya(parseFloat(e.target.value) || 0)} />
+            <Input type="number" name="totalBiaya" required min="1" value={totalBiaya} onChange={(e) => setTotalBiaya(e.target.value === "" ? "" : parseFloat(e.target.value))} placeholder="0" />
           </div>
           <div className="space-y-2">
             <Label>Dana Swadaya Umat</Label>
-            <Input type="number" name="danaSwadaya" required min="0" value={danaSwadaya} onChange={(e) => setDanaSwadaya(parseFloat(e.target.value) || 0)} />
+            <Input type="number" name="danaSwadaya" required min="0" value={danaSwadaya} onChange={(e) => setDanaSwadaya(e.target.value === "" ? "" : parseFloat(e.target.value))} placeholder="0" />
           </div>
           <div className="space-y-2">
             <Label>Bantuan Kas Lingkungan</Label>
-            <Input type="number" name="danaLingkungan" required min="0" value={danaLingkungan} onChange={(e) => setDanaLingkungan(parseFloat(e.target.value) || 0)} />
+            <Input type="number" name="danaLingkungan" required min="0" value={danaLingkungan} onChange={(e) => setDanaLingkungan(e.target.value === "" ? "" : parseFloat(e.target.value))} placeholder="0" />
           </div>
         </div>
         
@@ -176,7 +231,7 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
             Rp {danaParokiRequested.toLocaleString('id-ID')}
           </span>
         </div>
-        {danaParokiRequested <= 0 && totalBiaya > 0 && (
+        {danaParokiRequested <= 0 && (Number(totalBiaya) || 0) > 0 && (
           <p className="text-xs text-red-500 text-right">Nilai pengajuan harus lebih dari 0.</p>
         )}
       </div>
@@ -184,9 +239,9 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
       <div className="space-y-4">
         <h3 className="text-lg font-semibold border-b pb-2">Lampiran Dokumen</h3>
         <div className="space-y-2">
-          <Label>Upload Surat Permohonan Bantuan (PDF/Image)</Label>
-          <Input type="file" name="attachment" required accept=".pdf,image/*" className="cursor-pointer file:cursor-pointer" />
-          <p className="text-xs text-muted-foreground">Dokumen ini akan diunggah dan disimpan ke Google Drive Paroki.</p>
+          <Label>Upload Surat Permohonan Bantuan (Opsional, PDF/Image)</Label>
+          <Input type="file" name="attachment" accept=".pdf,image/*" className="cursor-pointer file:cursor-pointer" />
+          <p className="text-xs text-muted-foreground">Dokumen ini akan diunggah dan disimpan ke Google Drive Paroki jika dilampirkan.</p>
         </div>
       </div>
 

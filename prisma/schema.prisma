@@ -114,6 +114,9 @@ model KpsData {
   nikEncrypted         String   @map("nik_encrypted") @db.VarChar(255)  // AES-256-GCM encrypted
   kkEncrypted          String   @map("kk_encrypted") @db.VarChar(255)   // AES-256-GCM encrypted
   alamat               String   @db.Text
+  noHp                 String?  @map("no_hp") @db.VarChar(20)
+  pekerjaan            String?  @db.VarChar(100)
+  tanggalLahir         DateTime? @map("tanggal_lahir") @db.Date
   skorPekerjaan        Int      @default(0) @map("skor_pekerjaan")
   skorSandang          Int      @default(0) @map("skor_sandang")
   skorPangan           Int      @default(0) @map("skor_pangan")
@@ -129,6 +132,7 @@ model KpsData {
   // Relations
   lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
   spbRequests SpbRequest[]
+  umkmData    UmkmData[]
 
   @@map("kps_data")
 }
@@ -142,11 +146,14 @@ model UmkmData {
   asetTotal        Decimal? @map("aset_total") @db.Decimal(15, 2)
   omsetTahunan     Decimal? @map("omset_tahunan") @db.Decimal(15, 2)
   nib              String?  @db.VarChar(50)
+  nikEncrypted     String?  @map("nik_encrypted") @db.VarChar(255)
+  kpsId            BigInt?  @map("kps_id")
   statusKelayakan  Boolean  @default(true) @map("status_kelayakan")
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
   lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
+  kpsData     KpsData?     @relation(fields: [kpsId], references: [id])
   spbRequests SpbRequest[]
 
   @@map("umkm_data")
@@ -227,6 +234,8 @@ model SpbRequest {
   danaLingkungan         Decimal   @default(0) @map("dana_lingkungan") @db.Decimal(15, 2)
   danaParokiRequested    Decimal   @map("dana_paroki_requested") @db.Decimal(15, 2)
   danaKevikepanRequested Decimal   @default(0) @map("dana_kevikepan_requested") @db.Decimal(15, 2)
+  keaktifanUmat          String?   @map("keaktifan_umat") @db.VarChar(50)
+  alasanBantuan          String?   @map("alasan_bantuan") @db.Text
   status                 SpbStatus @default(SUBMITTED)
   rejectionReason        String?   @map("rejection_reason") @db.Text
   createdBy              BigInt    @map("created_by")

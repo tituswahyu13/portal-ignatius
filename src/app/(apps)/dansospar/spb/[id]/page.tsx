@@ -83,6 +83,16 @@ export default async function SpbDetailPage({ params }: { params: { id: string }
                 <div className="text-muted-foreground">Sumber Dana Intensi</div>
                 <div className="font-semibold">{spb.intensiAccount.namaIntensi}</div>
               </div>
+              <div>
+                <div className="text-muted-foreground">Keaktifan Umat</div>
+                <div className="font-semibold">{spb.keaktifanUmat || "-"}</div>
+              </div>
+              <div className="col-span-2 mt-2">
+                <div className="text-muted-foreground">Alasan Bantuan</div>
+                <div className="font-medium p-3 bg-muted/30 rounded-md border text-sm italic mt-1">
+                  "{spb.alasanBantuan || "Tidak ada alasan yang dicantumkan"}"
+                </div>
+              </div>
             </div>
           </div>
 

@@ -75,9 +75,43 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Alamat Lengkap</Label>
-            <Input name="alamat" required defaultValue={kps.alamat} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>NIK (Biarkan jika tidak diubah)</Label>
+              <Input name="nik" placeholder="Masukkan 16 digit NIK baru" defaultValue={kps.nikDecryptedMasked || ""} />
+              <p className="text-xs text-muted-foreground">Ketik ulang 16 digit jika ingin mengubah NIK.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>No. KK (Biarkan jika tidak diubah)</Label>
+              <Input name="kk" placeholder="Masukkan 16 digit KK baru" defaultValue={kps.kkDecryptedMasked || ""} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nomor HP/WA (Opsional)</Label>
+              <Input name="noHp" placeholder="0812xxxxxx" defaultValue={kps.noHp || ""} />
+            </div>
+            <div className="space-y-2">
+              <Label>Pekerjaan Utama</Label>
+              <Input name="pekerjaan" placeholder="Contoh: Buruh Harian" defaultValue={kps.pekerjaan || ""} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Tanggal Lahir</Label>
+              {/* Note: Ensure kps.tanggalLahir is parsed correctly if it exists (e.g. YYYY-MM-DD format) */}
+              <Input 
+                name="tanggalLahir" 
+                type="date" 
+                defaultValue={kps.tanggalLahir ? new Date(kps.tanggalLahir).toISOString().split('T')[0] : ""} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Alamat Lengkap</Label>
+              <Input name="alamat" required defaultValue={kps.alamat} />
+            </div>
           </div>
 
           <div className="border rounded-md p-4 space-y-4 bg-muted/20">

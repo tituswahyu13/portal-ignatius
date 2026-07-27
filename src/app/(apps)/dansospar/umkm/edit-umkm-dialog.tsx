@@ -1,18 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { updateUmkmAction } from "./actions";
+import { updateUmkmAction, getKpsByLingkungan } from "./actions";
 import { Edit2 } from "lucide-react";
 
 export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: any[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const [selectedLingkungan, setSelectedLingkungan] = useState<string>(umkm.lingkunganId?.toString() || "");
+  const [kpsList, setKpsList] = useState<any[]>([]);
+  const [isKps, setIsKps] = useState<boolean>(!!umkm.kpsId);
+
+  // Load KPS when lingkungan changes
+  useEffect(() => {
+    if (!selectedLingkungan) {
+      setKpsList([]);
+      return;
+    }
+
+    const fetchKps = async () => {
+      const data = await getKpsByLingkungan(parseInt(selectedLingkungan));
+      setKpsList(data);
+    };
+    
+    fetchKps();
+  }, [selectedLingkungan]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -52,7 +71,7 @@ export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: an
             </div>
             <div className="space-y-2">
               <Label>Lingkungan</Label>
-              <Select name="lingkunganId" required defaultValue={umkm.lingkunganId?.toString()}>
+              <Select name="lingkunganId" required value={selectedLingkungan} onValueChange={setSelectedLingkungan}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Lingkungan" />
                 </SelectTrigger>
@@ -63,6 +82,46 @@ export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: an
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-4 border p-4 rounded-md bg-muted/20">
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id={`isKps-edit-${umkm.id}`} 
+                checked={isKps} 
+                onChange={(e) => setIsKps(e.target.checked)} 
+                className="rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor={`isKps-edit-${umkm.id}`} className="cursor-pointer">Pemilik adalah Keluarga Pra-Sejahtera (KPS)</Label>
+            </div>
+            
+            {isKps ? (
+              <div className="space-y-2">
+                <Label>Pilih Data KPS (Berdasarkan Lingkungan)</Label>
+                <Select name="kpsId" defaultValue={umkm.kpsId?.toString()}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedLingkungan ? "Pilih Kepala Keluarga KPS" : "Pilih Lingkungan Dahulu"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kpsList.length === 0 && selectedLingkungan ? (
+                      <SelectItem value="none" disabled>Tidak ada data KPS</SelectItem>
+                    ) : (
+                      kpsList.map((k) => (
+                        <SelectItem key={k.id} value={k.id.toString()}>{k.namaKepalaKeluarga}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Pilih Kepala Keluarga jika UMKM ini terikat dengan data KPS.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Nomor Induk Kependudukan (NIK)</Label>
+                <Input name="nik" placeholder="Masukkan 16 digit NIK" maxLength={16} defaultValue={umkm.nik || ""} />
+                <p className="text-xs text-muted-foreground">NIK akan dienkripsi dan disimpan dengan aman.</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

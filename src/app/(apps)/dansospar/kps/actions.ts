@@ -45,6 +45,12 @@ export async function createKpsAction(formData: FormData) {
     // Tentukan status KPS
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";
 
+    // New optional fields
+    const noHp = formData.get("noHp") as string;
+    const pekerjaan = formData.get("pekerjaan") as string;
+    const tanggalLahirStr = formData.get("tanggalLahir") as string;
+    const tanggalLahir = tanggalLahirStr ? new Date(tanggalLahirStr) : null;
+
     // Encrypt sensitive data
     const nikEncrypted = encryptString(nik);
     const kkEncrypted = encryptString(kk);
@@ -55,6 +61,9 @@ export async function createKpsAction(formData: FormData) {
         nikEncrypted,
         kkEncrypted,
         alamat,
+        noHp: noHp || null,
+        pekerjaan: pekerjaan || null,
+        tanggalLahir,
         lingkunganId,
         skorPekerjaan,
         skorSandang,
@@ -151,30 +160,58 @@ export async function updateKpsAction(id: string, formData: FormData) {
 
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";
 
+    // New optional fields
+    const noHp = formData.get("noHp") as string;
+    const pekerjaan = formData.get("pekerjaan") as string;
+    const tanggalLahirStr = formData.get("tanggalLahir") as string;
+    const tanggalLahir = tanggalLahirStr ? new Date(tanggalLahirStr) : null;
+    
+    // NIK & KK (Only update if they exist and are not masked with '*')
+    const nik = formData.get("nik") as string;
+    const kk = formData.get("kk") as string;
+    
+    let nikEncryptedToSave: string | undefined;
+    if (nik && !nik.includes("*") && nik.length === 16) {
+      nikEncryptedToSave = encryptString(nik);
+    }
+    
+    let kkEncryptedToSave: string | undefined;
+    if (kk && !kk.includes("*") && kk.length === 16) {
+      kkEncryptedToSave = encryptString(kk);
+    }
+
+    const dataToUpdate: any = {
+      namaKepalaKeluarga,
+      alamat,
+      noHp: noHp || null,
+      pekerjaan: pekerjaan || null,
+      tanggalLahir,
+      lingkunganId,
+      skorPekerjaan,
+      skorSandang,
+      skorPangan,
+      skorPapan,
+      skorKesehatan,
+      skorPendidikan,
+      skorSosial,
+      totalSkor,
+      persentaseKelayakan,
+      statusKeluarga
+    };
+    
+    if (nikEncryptedToSave) dataToUpdate.nikEncrypted = nikEncryptedToSave;
+    if (kkEncryptedToSave) dataToUpdate.kkEncrypted = kkEncryptedToSave;
+
     await prisma.kpsData.update({
       where: { id: BigInt(id) },
-      data: {
-        namaKepalaKeluarga,
-        alamat,
-        lingkunganId,
-        skorPekerjaan,
-        skorSandang,
-        skorPangan,
-        skorPapan,
-        skorKesehatan,
-        skorPendidikan,
-        skorSosial,
-        totalSkor,
-        persentaseKelayakan,
-        statusKeluarga
-      }
+      data: dataToUpdate
     });
 
     revalidatePath("/dansospar/kps");
     return { success: true };
   } catch (error: any) {
     console.error("Gagal memperbarui KPS:", error);
-    return { success: false, error: "Gagal memperbarui data" };
+    return { success: false, error: error.message || "Gagal memperbarui data" };
   }
 }
 
