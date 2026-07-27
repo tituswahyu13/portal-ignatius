@@ -1,0 +1,268 @@
+// Prisma Schema for Portal Ignatius
+// Converted from MySQL DDL (Dokumen 01) to PostgreSQL/Prisma
+// Database: Supabase (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 1. MASTER WILAYAH & LINGKUNGAN
+// ============================================================
+
+model Lingkungan {
+  id              Int      @id @default(autoincrement())
+  namaLingkungan  String   @map("nama_lingkungan") @db.VarChar(100)
+  wilayah         String   @db.VarChar(50)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  users           User[]
+  kpsData         KpsData[]
+  umkmData        UmkmData[]
+  spbRequests     SpbRequest[]
+
+  @@map("lingkungan")
+}
+
+// ============================================================
+// 2. USERS & RBAC (APP-AWARE)
+// ============================================================
+
+model Role {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(50)
+  description String? @db.VarChar(255)
+
+  // Relations
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int     @id @default(autoincrement())
+  appModule   String  @map("app_module") @db.VarChar(50)  // e.g., 'GLOBAL', 'DANSOSPAR', 'DATAUMAT'
+  name        String  @unique @db.VarChar(100)
+  description String? @db.VarChar(255)
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int @map("role_id")
+  permissionId Int @map("permission_id")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id               BigInt   @id @default(autoincrement())
+  name             String   @db.VarChar(100)
+  email            String   @unique @db.VarChar(100)
+  passwordHash     String   @map("password_hash") @db.VarChar(255)
+  phoneNumber      String?  @map("phone_number") @db.VarChar(20)
+  lingkunganId     Int?     @map("lingkungan_id")
+  isActive         Boolean  @default(true) @map("is_active")
+  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lingkungan         Lingkungan?          @relation(fields: [lingkunganId], references: [id])
+  userRoles          UserRole[]
+  spbRequests        SpbRequest[]
+  financialMutations FinancialMutation[]
+
+  @@map("users")
+}
+
+model UserRole {
+  userId BigInt @map("user_id")
+  roleId Int    @map("role_id")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// ============================================================
+// 3. DATA SUBJEK (KPS & UMKM)
+// ============================================================
+
+model KpsData {
+  id                   BigInt   @id @default(autoincrement())
+  lingkunganId         Int      @map("lingkungan_id")
+  namaKepalaKeluarga   String   @map("nama_kepala_keluarga") @db.VarChar(150)
+  nikEncrypted         String   @map("nik_encrypted") @db.VarChar(255)  // AES-256-GCM encrypted
+  alamat               String   @db.Text
+  panganLayak          Boolean  @default(true) @map("pangan_layak")
+  sandangLayak         Boolean  @default(true) @map("sandang_layak")
+  papanLayak           Boolean  @default(true) @map("papan_layak")
+  kesehatanLayak       Boolean  @default(true) @map("kesehatan_layak")
+  pendidikanLayak      Boolean  @default(true) @map("pendidikan_layak")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
+  spbRequests SpbRequest[]
+
+  @@map("kps_data")
+}
+
+model UmkmData {
+  id               BigInt   @id @default(autoincrement())
+  lingkunganId     Int      @map("lingkungan_id")
+  namaPemilik      String   @map("nama_pemilik") @db.VarChar(150)
+  namaUsaha        String   @map("nama_usaha") @db.VarChar(150)
+  jenisUsaha       String?  @map("jenis_usaha") @db.VarChar(100)
+  asetTotal        Decimal? @map("aset_total") @db.Decimal(15, 2)
+  omsetTahunan     Decimal? @map("omset_tahunan") @db.Decimal(15, 2)
+  nib              String?  @db.VarChar(50)
+  statusKelayakan  Boolean  @default(true) @map("status_kelayakan")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
+  spbRequests SpbRequest[]
+
+  @@map("umkm_data")
+}
+
+// ============================================================
+// 4. KEUANGAN & INTENSI
+// ============================================================
+
+enum MutationType {
+  IN
+  OUT
+}
+
+enum SourceType {
+  KOLEKTE
+  PERSEMBAHAN_BULANAN
+  APP
+  DONASI
+  SPB_REALIZATION
+  INTER_TRANSFER
+}
+
+model IntensiAccount {
+  id           Int     @id @default(autoincrement())
+  kodeAccount  String  @unique @map("kode_account") @db.VarChar(20)
+  namaIntensi  String  @map("nama_intensi") @db.VarChar(100)
+  saldo        Decimal @default(0.00) @db.Decimal(15, 2)
+
+  // Relations
+  financialMutations FinancialMutation[]
+  spbRequests        SpbRequest[]
+
+  @@map("intensi_accounts")
+}
+
+model FinancialMutation {
+  id              BigInt     @id @default(autoincrement())
+  intensiId       Int        @map("intensi_id")
+  type            MutationType
+  amount          Decimal    @db.Decimal(15, 2)
+  sourceType      SourceType @map("source_type")
+  referenceId     String?    @map("reference_id") @db.VarChar(100)
+  description     String?    @db.Text
+  createdBy       BigInt?    @map("created_by")
+  transactionDate DateTime   @default(now()) @map("transaction_date")
+
+  // Relations
+  intensiAccount IntensiAccount @relation(fields: [intensiId], references: [id])
+  creator        User?          @relation(fields: [createdBy], references: [id])
+
+  @@map("financial_mutations")
+}
+
+// ============================================================
+// 5. SURAT PERMOHONAN BANTUAN (SPB) & APPROVAL
+// ============================================================
+
+enum SpbStatus {
+  SUBMITTED
+  REVIEW_PIC
+  APPROVED_TPDSP
+  REJECTED
+  APPROVED_PASTOR
+  REALIZED
+}
+
+model SpbRequest {
+  id                     BigInt    @id @default(autoincrement())
+  nomorSpb               String    @unique @map("nomor_spb") @db.VarChar(100)
+  lingkunganId           Int       @map("lingkungan_id")
+  kpsId                  BigInt?   @map("kps_id")
+  umkmId                 BigInt?   @map("umkm_id")
+  intensiId              Int       @map("intensi_id")
+  kategoriBantuan        String    @map("kategori_bantuan") @db.VarChar(50)
+  totalBiaya             Decimal   @map("total_biaya") @db.Decimal(15, 2)
+  danaSwadaya            Decimal   @default(0) @map("dana_swadaya") @db.Decimal(15, 2)
+  danaLingkungan         Decimal   @default(0) @map("dana_lingkungan") @db.Decimal(15, 2)
+  danaParokiRequested    Decimal   @map("dana_paroki_requested") @db.Decimal(15, 2)
+  danaKevikepanRequested Decimal   @default(0) @map("dana_kevikepan_requested") @db.Decimal(15, 2)
+  status                 SpbStatus @default(SUBMITTED)
+  rejectionReason        String?   @map("rejection_reason") @db.Text
+  createdBy              BigInt    @map("created_by")
+  submittedAt            DateTime  @default(now()) @map("submitted_at")
+
+  // Relations
+  lingkungan     Lingkungan      @relation(fields: [lingkunganId], references: [id])
+  kpsData        KpsData?        @relation(fields: [kpsId], references: [id])
+  umkmData       UmkmData?       @relation(fields: [umkmId], references: [id])
+  intensiAccount IntensiAccount  @relation(fields: [intensiId], references: [id])
+  creator        User            @relation(fields: [createdBy], references: [id])
+  attachments    SpbAttachment[]
+  skDocuments    SkDocument[]
+
+  @@map("spb_requests")
+}
+
+// Note: Menggunakan google_drive_file_id untuk storage (Dokumen 04)
+model SpbAttachment {
+  id                BigInt   @id @default(autoincrement())
+  spbId             BigInt   @map("spb_id")
+  fileType          String   @map("file_type") @db.VarChar(50)
+  googleDriveFileId String   @map("google_drive_file_id") @db.VarChar(255)
+  uploadedAt        DateTime @default(now()) @map("uploaded_at")
+
+  // Relations
+  spbRequest SpbRequest @relation(fields: [spbId], references: [id], onDelete: Cascade)
+
+  @@map("spb_attachments")
+}
+
+model SkDocument {
+  id                      BigInt   @id @default(autoincrement())
+  nomorSk                 String   @unique @map("nomor_sk") @db.VarChar(100)
+  spbId                   BigInt   @map("spb_id")
+  totalApprovedParoki     Decimal  @map("total_approved_paroki") @db.Decimal(15, 2)
+  totalApprovedKevikepan  Decimal  @default(0) @map("total_approved_kevikepan") @db.Decimal(15, 2)
+  qrHash                  String   @map("qr_hash") @db.VarChar(255)  // SHA-256 for QR verification
+  pdfGoogleDriveId        String   @map("pdf_google_drive_id") @db.VarChar(255)
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  // Relations
+  spbRequest SpbRequest @relation(fields: [spbId], references: [id])
+
+  @@map("sk_documents")
+}
