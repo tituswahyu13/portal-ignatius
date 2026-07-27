@@ -1,4 +1,4 @@
-import { getUsers } from "@/lib/data/users";
+import { getUsers, getRoles, getLingkungan, getPermissions, getRolePermissions } from "@/lib/data/users";
 import {
   Table,
   TableBody,
@@ -8,10 +8,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CreateUserDialog } from "./create-user-dialog";
+import { UserActionsMenu } from "./user-actions-menu";
+import { RoleMatrix } from "./role-matrix";
 
 export const dynamic = "force-dynamic";
 
-export default function UserManagementPage() {
+export default async function UserManagementPage() {
+  const roles = await getRoles();
+  const lingkungan = await getLingkungan();
+  const permissions = await getPermissions();
+  const rolePermissions = await getRolePermissions();
+
   return (
     <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
@@ -21,16 +30,34 @@ export default function UserManagementPage() {
             Kelola daftar pengguna, peran (role), dan hak akses sistem.
           </p>
         </div>
+        <CreateUserDialog roles={roles} lingkungan={lingkungan} />
       </div>
 
-      <div className="rounded-md border bg-card">
-        <UserTable />
-      </div>
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="users">Pengguna</TabsTrigger>
+          <TabsTrigger value="roles">Hak Akses (RBAC)</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users">
+          <div className="rounded-md border bg-card">
+            <UserTable roles={roles} lingkungan={lingkungan} />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="roles">
+          <RoleMatrix 
+            roles={roles} 
+            permissions={permissions} 
+            rolePermissions={rolePermissions} 
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-async function UserTable() {
+async function UserTable({ roles, lingkungan }: { roles: any[], lingkungan: any[] }) {
   let users = [];
   try {
     users = await getUsers();
@@ -61,6 +88,7 @@ async function UserTable() {
           <TableHead>Role</TableHead>
           <TableHead>Lingkungan</TableHead>
           <TableHead className="text-right">Status</TableHead>
+          <TableHead className="w-[50px]"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -71,7 +99,7 @@ async function UserTable() {
             <TableCell>{user.phoneNumber || "-"}</TableCell>
             <TableCell>
               <div className="flex gap-1 flex-wrap">
-                {user.userRoles.map((ur) => (
+                {user.userRoles.map((ur: any) => (
                   <Badge key={ur.role.id} variant="secondary" className="text-[10px]">
                     {ur.role.name}
                   </Badge>
@@ -85,6 +113,9 @@ async function UserTable() {
               ) : (
                 <Badge variant="destructive">Tidak Aktif</Badge>
               )}
+            </TableCell>
+            <TableCell>
+              <UserActionsMenu user={user} roles={roles} lingkungan={lingkungan} />
             </TableCell>
           </TableRow>
         ))}

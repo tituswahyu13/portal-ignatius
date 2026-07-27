@@ -60,3 +60,26 @@ export async function getLingkungan() {
     throw new Error("Gagal mengambil data lingkungan.");
   }
 }
+
+export async function getPermissions() {
+  try {
+    return await prisma.permission.findMany({
+      orderBy: [
+        { appModule: 'asc' },
+        { name: 'asc' }
+      ]
+    });
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Gagal mengambil data permissions.");
+  }
+}
+
+export async function getRolePermissions() {
+  try {
+    return await prisma.rolePermission.findMany();
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Gagal mengambil data role_permissions.");
+  }
+}
