@@ -112,12 +112,18 @@ model KpsData {
   lingkunganId         Int      @map("lingkungan_id")
   namaKepalaKeluarga   String   @map("nama_kepala_keluarga") @db.VarChar(150)
   nikEncrypted         String   @map("nik_encrypted") @db.VarChar(255)  // AES-256-GCM encrypted
+  kkEncrypted          String   @map("kk_encrypted") @db.VarChar(255)   // AES-256-GCM encrypted
   alamat               String   @db.Text
-  panganLayak          Boolean  @default(true) @map("pangan_layak")
-  sandangLayak         Boolean  @default(true) @map("sandang_layak")
-  papanLayak           Boolean  @default(true) @map("papan_layak")
-  kesehatanLayak       Boolean  @default(true) @map("kesehatan_layak")
-  pendidikanLayak      Boolean  @default(true) @map("pendidikan_layak")
+  skorPekerjaan        Int      @default(0) @map("skor_pekerjaan")
+  skorSandang          Int      @default(0) @map("skor_sandang")
+  skorPangan           Int      @default(0) @map("skor_pangan")
+  skorPapan            Int      @default(0) @map("skor_papan")
+  skorKesehatan        Int      @default(0) @map("skor_kesehatan")
+  skorPendidikan       Int      @default(0) @map("skor_pendidikan")
+  skorSosial           Int      @default(0) @map("skor_sosial")
+  totalSkor            Int      @default(0) @map("total_skor")
+  persentaseKelayakan  Decimal  @default(0) @map("persentase_kelayakan") @db.Decimal(5, 2)
+  statusKeluarga       String   @default("Prasejahtera") @map("status_keluarga") @db.VarChar(50)
   createdAt            DateTime @default(now()) @map("created_at")
 
   // Relations
