@@ -76,7 +76,7 @@ async function main() {
         nomorSpb: "SPB/2026/0001",
         lingkunganId: kps.lingkunganId,
         kpsId: kps.id,
-        intensiId: intensi1.id, // Dana Papa Miskin
+        intensiId: intensi1!.id, // Dana Papa Miskin
         kategoriBantuan: "Pangan",
         totalBiaya: 1000000,
         danaSwadaya: 100000,
@@ -93,7 +93,7 @@ async function main() {
         nomorSpb: "SPB/2026/0002",
         lingkunganId: kps.lingkunganId,
         kpsId: kps.id,
-        intensiId: intensi3.id, // Dana Pendidikan
+        intensiId: intensi3!.id, // Dana Pendidikan
         kategoriBantuan: "Pendidikan",
         totalBiaya: 5000000,
         danaSwadaya: 500000,
