@@ -26,7 +26,7 @@ async function main() {
     // Tambah saldo PPM 50jt
     await prisma.financialMutation.create({
       data: {
-        intensiId: intensi1.id,
+        intensiId: intensi1!.id,
         type: "IN",
         amount: 50000000,
         sourceType: "DONASI",
@@ -34,12 +34,12 @@ async function main() {
         createdBy: admin.id
       }
     });
-    await prisma.intensiAccount.update({ where: { id: intensi1.id }, data: { saldo: { increment: 50000000 } } });
+    await prisma.intensiAccount.update({ where: { id: intensi1!.id }, data: { saldo: { increment: 50000000 } } });
 
     // Tambah saldo APP 20jt
     await prisma.financialMutation.create({
       data: {
-        intensiId: intensi2.id,
+        intensiId: intensi2!.id,
         type: "IN",
         amount: 20000000,
         sourceType: "APP",
@@ -47,12 +47,12 @@ async function main() {
         createdBy: admin.id
       }
     });
-    await prisma.intensiAccount.update({ where: { id: intensi2.id }, data: { saldo: { increment: 20000000 } } });
+    await prisma.intensiAccount.update({ where: { id: intensi2!.id }, data: { saldo: { increment: 20000000 } } });
 
     // Tambah saldo Pendidikan 15jt
     await prisma.financialMutation.create({
       data: {
-        intensiId: intensi3.id,
+        intensiId: intensi3!.id,
         type: "IN",
         amount: 15000000,
         sourceType: "KOLEKTE",
@@ -60,7 +60,7 @@ async function main() {
         createdBy: admin.id
       }
     });
-    await prisma.intensiAccount.update({ where: { id: intensi3.id }, data: { saldo: { increment: 15000000 } } });
+    await prisma.intensiAccount.update({ where: { id: intensi3!.id }, data: { saldo: { increment: 15000000 } } });
   }
 
   // 3. Ambil data KPS dan Lingkungan untuk dummy SPB
@@ -111,7 +111,7 @@ async function main() {
           nomorSpb: "SPB/2026/0003",
           lingkunganId: kps.lingkunganId,
           kpsId: kps.id,
-          intensiId: intensi2.id, // Dana APP
+          intensiId: intensi2!.id, // Dana APP
           kategoriBantuan: "Papan (Bedah Rumah)",
           totalBiaya: 10000000,
           danaSwadaya: 2000000,
@@ -125,7 +125,7 @@ async function main() {
       // Potong saldo
       await tx.financialMutation.create({
         data: {
-          intensiId: intensi2.id,
+          intensiId: intensi2!.id,
           type: "OUT",
           amount: 7000000,
           sourceType: "SPB_REALIZATION",
@@ -136,7 +136,7 @@ async function main() {
       });
 
       await tx.intensiAccount.update({
-        where: { id: intensi2.id },
+        where: { id: intensi2!.id },
         data: { saldo: { decrement: 7000000 } }
       });
     });

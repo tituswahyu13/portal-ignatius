@@ -90,7 +90,7 @@ export function RoleMatrix({
 
   return (
     <div className="space-y-8">
-      {Object.entries(moduleGroups).map(([moduleName, perms]) => (
+      {Object.entries(moduleGroups).map(([moduleName, perms]: any) => (
         <div key={moduleName} className="rounded-md border bg-card">
           <div className="p-4 bg-muted/30 border-b">
             <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -110,7 +110,7 @@ export function RoleMatrix({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {perms.map((perm, index) => {
+                {perms.map((perm: any, index: number) => {
                   const currentPrefix = perm.name.split('_')[0];
                   const previousPrefix = index > 0 ? perms[index - 1].name.split('_')[0] : null;
                   const showSeparator = currentPrefix !== previousPrefix;

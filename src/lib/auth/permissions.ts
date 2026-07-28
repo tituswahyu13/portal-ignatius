@@ -91,7 +91,7 @@ export const getLingkunganRestriction = async () => {
   }
 
   if (isGlobal) {
-    return { restricted: false, lingkunganId: null };
+    return { restricted: false, lingkunganId: 0 };
   } else {
     // Restricted to their own lingkungan
     return { restricted: true, lingkunganId: user.lingkunganId || -1 };
