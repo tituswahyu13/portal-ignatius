@@ -96,7 +96,7 @@ export default async function SpbDetailPage({ params }: { params: { id: string }
               <div className="col-span-2 mt-2">
                 <div className="text-muted-foreground">Alasan Bantuan</div>
                 <div className="font-medium p-3 bg-muted/30 rounded-md border text-sm italic mt-1">
-                  "{spb.alasanBantuan || "Tidak ada alasan yang dicantumkan"}"
+                  &quot;{spb.alasanBantuan || "Tidak ada alasan yang dicantumkan"}&quot;
                 </div>
               </div>
             </div>
