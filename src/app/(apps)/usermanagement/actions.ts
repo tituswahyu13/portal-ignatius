@@ -57,7 +57,33 @@ export async function createUserAction(formData: any) {
     return { success: true, data: { id: newUser.id.toString(), email: newUser.email } };
   } catch (error: any) {
     console.error("Prisma Error:", error);
-    return { success: false, error: error.message || "Terjadi kesalahan internal" };
+    return { success: false, error: error.message || "Gagal mengubah profil pengguna" };
+  }
+}
+
+export async function toggleUserActiveStatus(userId: string, isActive: boolean) {
+  try {
+    await prisma.user.update({
+      where: { id: BigInt(userId) },
+      data: { isActive },
+    });
+
+    // Also insert audit log if possible (AuditLog model was just added)
+    // Note: in a real app you might want to know who did this, for now we leave userId as null (System)
+    await prisma.auditLog.create({
+      data: {
+        action: isActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
+        entity: "User",
+        entityId: userId,
+        details: `User ${userId} status changed to ${isActive}`,
+      }
+    });
+
+    revalidatePath("/usermanagement");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error toggling user status:", error);
+    return { success: false, error: error.message || "Gagal mengubah status pengguna" };
   }
 }
 
@@ -137,6 +163,61 @@ export async function toggleRolePermissionAction(roleId: number, permissionId: n
     return { success: true };
   } catch (error: any) {
     console.error("Prisma Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function bulkUpdatePermissions(changes: { roleId: number, permissionId: number, isGranted: boolean }[]) {
+  try {
+    for (const change of changes) {
+      if (change.isGranted) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId: change.roleId, permissionId: change.permissionId }
+          },
+          update: {},
+          create: { roleId: change.roleId, permissionId: change.permissionId }
+        });
+      } else {
+        await prisma.rolePermission.deleteMany({
+          where: { roleId: change.roleId, permissionId: change.permissionId }
+        });
+      }
+      
+      await prisma.auditLog.create({
+        data: {
+          action: change.isGranted ? "GRANT_PERMISSION" : "REVOKE_PERMISSION",
+          entity: "RolePermission",
+          entityId: `${change.roleId}-${change.permissionId}`,
+          details: `Permission ${change.permissionId} ${change.isGranted ? 'granted to' : 'revoked from'} Role ${change.roleId}`
+        }
+      });
+    }
+
+    // Attempt to notify affected users (for now, just roles)
+    // Find users who have the affected roles
+    const affectedRoleIds = Array.from(new Set(changes.map(c => c.roleId)));
+    const affectedUsers = await prisma.userRole.findMany({
+      where: { roleId: { in: affectedRoleIds } }
+    });
+
+    const notifications = affectedUsers.map(ur => ({
+      userId: ur.userId,
+      title: "Perubahan Hak Akses",
+      message: `Hak akses untuk salah satu role Anda telah diperbarui oleh Administrator.`,
+    }));
+
+    if (notifications.length > 0) {
+      // In a real app we might deduplicate this by userId
+      await prisma.notification.createMany({
+        data: notifications
+      });
+    }
+
+    revalidatePath("/usermanagement");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Bulk update error:", error);
     return { success: false, error: error.message };
   }
 }

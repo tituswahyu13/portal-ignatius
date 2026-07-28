@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { softDeleteUserAction } from "./actions";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { toggleUserActiveStatus } from "./actions";
 import { EditUserDialog } from "./edit-user-dialog";
 
 import {
@@ -13,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, UserX, UserCheck } from "lucide-react";
 
 export function UserActionsMenu({ 
   user, 
@@ -25,13 +26,22 @@ export function UserActionsMenu({
   lingkungan: any[] 
 }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  const handleDelete = async () => {
-    if (confirm(`Apakah Anda yakin ingin MENGHAPUS (Soft Delete) pengguna ${user.name}? Mereka tidak akan bisa login lagi.`)) {
-      setIsDeleting(true);
-      await softDeleteUserAction(user.id, user.email);
-      setIsDeleting(false);
+  const handleToggleActive = async () => {
+    const actionText = user.isActive ? "MENONAKTIFKAN" : "MENGAKTIFKAN";
+    if (confirm(`Apakah Anda yakin ingin ${actionText} pengguna ${user.name}?`)) {
+      setIsToggling(true);
+      const res = await toggleUserActiveStatus(user.id, !user.isActive);
+      setIsToggling(false);
+      
+      if (res.success) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
     }
   };
 
@@ -54,12 +64,12 @@ export function UserActionsMenu({
           </DropdownMenuItem>
           
           <DropdownMenuItem 
-            onClick={handleDelete} 
-            className="cursor-pointer text-destructive focus:text-destructive"
-            disabled={isDeleting || !user.isActive}
+            onClick={handleToggleActive} 
+            className={`cursor-pointer ${user.isActive ? 'text-destructive focus:text-destructive' : 'text-emerald-600 focus:text-emerald-600'}`}
+            disabled={isToggling || isPending}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>{isDeleting ? "Menghapus..." : "Soft Delete"}</span>
+            {user.isActive ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
+            <span>{(isToggling || isPending) ? "Memproses..." : (user.isActive ? "Nonaktifkan Pengguna" : "Aktifkan Pengguna")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

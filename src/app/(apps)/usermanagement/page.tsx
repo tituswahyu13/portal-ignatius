@@ -12,10 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateUserDialog } from "./create-user-dialog";
 import { UserActionsMenu } from "./user-actions-menu";
 import { RoleMatrix } from "./role-matrix";
+import { UserFilters } from "./user-filters";
 
 export const dynamic = "force-dynamic";
 
-export default async function UserManagementPage() {
+export default async function UserManagementPage({
+  searchParams,
+}: {
+  searchParams: { search?: string; role?: string; status?: string };
+}) {
   const roles = await getRoles();
   const lingkungan = await getLingkungan();
   const permissions = await getPermissions();
@@ -40,8 +45,9 @@ export default async function UserManagementPage() {
         </TabsList>
         
         <TabsContent value="users">
+          <UserFilters roles={roles} />
           <div className="rounded-md border bg-card">
-            <UserTable roles={roles} lingkungan={lingkungan} />
+            <UserTable roles={roles} lingkungan={lingkungan} searchParams={searchParams} />
           </div>
         </TabsContent>
         
@@ -57,10 +63,35 @@ export default async function UserManagementPage() {
   );
 }
 
-async function UserTable({ roles, lingkungan }: { roles: any[], lingkungan: any[] }) {
+async function UserTable({ roles, lingkungan, searchParams }: { roles: any[], lingkungan: any[], searchParams: any }) {
   let users = [];
   try {
-    users = await getUsers();
+    // Basic filter logic that should be handled in `getUsers` ideally,
+    // but since we want to modify here without breaking other usages:
+    let allUsers = await getUsers();
+    
+    // Apply filters
+    users = allUsers.filter((u: any) => {
+      let matchesSearch = true;
+      let matchesRole = true;
+      let matchesStatus = true;
+      
+      if (searchParams.search) {
+        const term = searchParams.search.toLowerCase();
+        matchesSearch = u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
+      }
+      
+      if (searchParams.role && searchParams.role !== "all") {
+        matchesRole = u.userRoles.some((ur: any) => ur.roleId.toString() === searchParams.role);
+      }
+      
+      if (searchParams.status && searchParams.status !== "all") {
+        const wantActive = searchParams.status === "active";
+        matchesStatus = u.isActive === wantActive;
+      }
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
   } catch (error) {
     return (
       <div className="p-8 text-center text-destructive">

@@ -37,13 +37,19 @@ async function main() {
   });
 
   const rolesToCreate = [
-    { name: "PENGURUS_LINGKUNGAN", desc: "Pengurus lingkungan umum" },
+    { name: "Ketua Lingkungan", desc: "Pengurus lingkungan umum" },
     { name: "PSE Wilayah/Lingkungan", desc: "Pengurus PSE di tingkat Wilayah atau Lingkungan" },
     { name: "Ketua Dansospar", desc: "Ketua Dana Sosial Paroki" },
     { name: "Sekretaris Dansospar", desc: "Sekretaris Dana Sosial Paroki" },
     { name: "Bendahara Dansospar", desc: "Bendahara Dana Sosial Paroki" },
     { name: "Pastor", desc: "Pastor Paroki penyetuju dokumen" }
   ];
+
+  // Rename old role if exists to avoid duplication
+  await prisma.role.updateMany({
+    where: { name: "PENGURUS_LINGKUNGAN" },
+    data: { name: "Ketua Lingkungan" }
+  });
 
   for (const r of rolesToCreate) {
     await prisma.role.upsert({
@@ -60,15 +66,32 @@ async function main() {
 
   // --- SEED PERMISSIONS ---
   const permissionsToCreate = [
-    { name: "MANAGE_USERS", appModule: "GLOBAL", desc: "Kelola pengguna, role, dan hak akses" },
+    { name: "USERS_CREATE", appModule: "GLOBAL", desc: "Buat pengguna baru" },
+    { name: "USERS_READ", appModule: "GLOBAL", desc: "Lihat daftar pengguna dan role" },
+    { name: "USERS_UPDATE", appModule: "GLOBAL", desc: "Ubah data pengguna" },
+    { name: "USERS_DELETE", appModule: "GLOBAL", desc: "Hapus pengguna" },
+    
     { name: "VIEW_DANSOSPAR_DASHBOARD", appModule: "DANSOSPAR", desc: "Lihat dashboard DanSosPar" },
-    { name: "CREATE_SPB", appModule: "DANSOSPAR", desc: "Buat pengajuan SPB baru" },
+
+    { name: "KPS_CREATE", appModule: "DANSOSPAR", desc: "Buat data KPS baru" },
+    { name: "KPS_READ", appModule: "DANSOSPAR", desc: "Lihat data KPS" },
+    { name: "KPS_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data KPS" },
+    { name: "KPS_DELETE", appModule: "DANSOSPAR", desc: "Hapus data KPS" },
+
+    { name: "UMKM_CREATE", appModule: "DANSOSPAR", desc: "Buat data UMKM baru" },
+    { name: "UMKM_READ", appModule: "DANSOSPAR", desc: "Lihat data UMKM" },
+    { name: "UMKM_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data UMKM" },
+    { name: "UMKM_DELETE", appModule: "DANSOSPAR", desc: "Hapus data UMKM" },
+
+    { name: "SPB_CREATE", appModule: "DANSOSPAR", desc: "Buat pengajuan SPB baru" },
+    { name: "SPB_READ", appModule: "DANSOSPAR", desc: "Lihat data pengajuan SPB" },
+    { name: "SPB_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data pengajuan SPB" },
+    { name: "SPB_DELETE", appModule: "DANSOSPAR", desc: "Hapus data pengajuan SPB" },
+
     { name: "REVIEW_SPB_PIC", appModule: "DANSOSPAR", desc: "Review SPB sebagai PIC (Ketua Lingkungan/Wilayah)" },
     { name: "APPROVE_SPB_TPDSP", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Tim Pelayanan DanSosPar" },
     { name: "APPROVE_SPB_PASTOR", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Pastor" },
-    { name: "REALIZE_SPB", appModule: "DANSOSPAR", desc: "Cairkan dana SPB (Bendahara)" },
-    { name: "MANAGE_KPS", appModule: "DANSOSPAR", desc: "Kelola data KPS (Keluarga Pra-Sejahtera)" },
-    { name: "MANAGE_UMKM", appModule: "DANSOSPAR", desc: "Kelola data UMKM" }
+    { name: "REALIZE_SPB", appModule: "DANSOSPAR", desc: "Cairkan dana SPB (Bendahara)" }
   ];
 
   for (const p of permissionsToCreate) {
