@@ -3,15 +3,30 @@ import { SpbTable } from "./spb-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { getLingkunganRestriction } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, hasPermission } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
 export default async function SpbManagementPage() {
   const restriction = await getLingkunganRestriction();
-  const whereClause = restriction.restricted 
+  const whereClause = restriction.restricted
     ? { lingkunganId: restriction.lingkunganId }
     : {};
+
+  const canWrite = await hasPermission("SPB_UPDATE");
+  const canDelete = await hasPermission("SPB_DELETE");
+
+  // Determine which statuses the current user can act on
+  const canReviewPic = await hasPermission("REVIEW_SPB_PIC");
+  const canApproveTpdsp = await hasPermission("APPROVE_SPB_TPDSP");
+  const canApprovePastor = await hasPermission("APPROVE_SPB_PASTOR");
+  const canRealize = await hasPermission("REALIZE_SPB");
+
+  const actionableStatuses: string[] = [];
+  if (canReviewPic) actionableStatuses.push("SUBMITTED");
+  if (canApproveTpdsp) actionableStatuses.push("REVIEW_PIC");
+  if (canApprovePastor) actionableStatuses.push("APPROVED_TPDSP");
+  if (canRealize) actionableStatuses.push("APPROVED_PASTOR");
 
   const spbList = await prisma.spbRequest.findMany({
     where: whereClause,
@@ -54,7 +69,13 @@ export default async function SpbManagementPage() {
         </Button>
       </div>
 
-      <SpbTable spbList={serializedList} />
+      <SpbTable
+        spbList={serializedList}
+        canWrite={canWrite}
+        canDelete={canDelete}
+        actionableStatuses={actionableStatuses}
+      />
     </div>
   );
 }
+

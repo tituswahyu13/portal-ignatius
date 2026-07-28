@@ -74,7 +74,7 @@ export function EditUserDialog({
     
     const submitData = {
       ...values,
-      lingkunganId: values.lingkunganId === "none" ? undefined : values.lingkunganId,
+      lingkunganId: values.lingkunganId === "none" ? null : values.lingkunganId,
     };
 
     const res = await updateUserAction(user.id, submitData);
@@ -119,11 +119,11 @@ export function EditUserDialog({
               )}
             />
 
-            <FormItem>
-              <FormLabel>Email</FormLabel>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Email</label>
               <Input disabled value={user.email} className="bg-muted" />
               <p className="text-[10px] text-muted-foreground">Email terikat dengan Auth dan tidak bisa diubah langsung.</p>
-            </FormItem>
+            </div>
 
             <FormField
               control={form.control}

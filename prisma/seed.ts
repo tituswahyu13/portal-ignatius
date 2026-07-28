@@ -39,6 +39,7 @@ async function main() {
   const rolesToCreate = [
     { name: "Ketua Lingkungan", desc: "Pengurus lingkungan umum" },
     { name: "PSE Wilayah/Lingkungan", desc: "Pengurus PSE di tingkat Wilayah atau Lingkungan" },
+    { name: "Ketua PSE", desc: "Ketua Pengembangan Sosial Ekonomi (PSE) tingkat Paroki" },
     { name: "Ketua Dansospar", desc: "Ketua Dana Sosial Paroki" },
     { name: "Sekretaris Dansospar", desc: "Sekretaris Dana Sosial Paroki" },
     { name: "Bendahara Dansospar", desc: "Bendahara Dana Sosial Paroki" },
@@ -132,7 +133,40 @@ async function main() {
     });
   }
 
-  console.log("✅ Permissions seeded");
+  // Definisikan pemetaan Role ke Permissions
+  const rolePermissionMapping: Record<string, string[]> = {
+    "Ketua Lingkungan": ["SPB_CREATE", "SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "PSE Wilayah/Lingkungan": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Ketua PSE": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "KPS_READ", "UMKM_READ"],
+    "Ketua Dansospar": ["APPROVE_SPB_TPDSP", "SPB_READ", "SPB_UPDATE", "SPB_DELETE", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Sekretaris Dansospar": ["SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Bendahara Dansospar": ["REALIZE_SPB", "SPB_READ", "INTENSI_READ", "MUTASI_CREATE", "MUTASI_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Pastor": ["APPROVE_SPB_PASTOR", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD"]
+  };
+
+  // Aplikasikan pemetaan
+  for (const [roleName, permNames] of Object.entries(rolePermissionMapping)) {
+    const role = await prisma.role.findUnique({ where: { name: roleName } });
+    if (role) {
+      for (const permName of permNames) {
+        const perm = allPerms.find(p => p.name === permName);
+        if (perm) {
+          await prisma.rolePermission.upsert({
+            where: {
+              roleId_permissionId: { roleId: role.id, permissionId: perm.id }
+            },
+            update: {},
+            create: {
+              roleId: role.id,
+              permissionId: perm.id
+            }
+          });
+        }
+      }
+    }
+  }
+
+  console.log("✅ Role-specific permissions seeded");
 
   // --- SEED SUPER ADMIN USER ---(Dummy)
   const adminEmail = "admin@portal-ignatius.id";

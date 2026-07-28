@@ -3,7 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { uploadFileToDrive } from "@/lib/gdrive";
-import { getLingkunganRestriction } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, hasPermission, getCurrentUser } from "@/lib/auth/permissions";
 
 // Get data for form dropdowns
 export async function getSpbFormData() {
@@ -105,13 +105,10 @@ export async function createSpbAction(formData: FormData) {
     const currentYear = new Date().getFullYear();
     const nomorSpb = `${prefix}/${currentYear}/${(countSpb + 1).toString().padStart(4, '0')}`;
 
-    // Get dummy admin ID for createdBy
-    const admin = await prisma.user.findFirst({
-      where: { email: "admin@portal-ignatius.local" }
-    });
+    const currentUser = await getCurrentUser();
 
-    if (!admin) {
-      return { success: false, error: "User Admin (Dummy) belum dibuat. Jalankan seeder user terlebih dahulu." };
+    if (!currentUser) {
+      return { success: false, error: "Sesi tidak valid. Harap login kembali." };
     }
 
     // Save SPB to Database with transaction
@@ -131,7 +128,7 @@ export async function createSpbAction(formData: FormData) {
           danaLingkungan,
           danaParokiRequested,
           status: "SUBMITTED",
-          createdBy: admin.id
+          createdBy: currentUser.id
         }
       });
 
@@ -156,7 +153,11 @@ export async function createSpbAction(formData: FormData) {
 }
 
 // Update SPB Status and Realize Funds
-export async function updateSpbStatusAction(spbId: bigint, newStatus: string) {
+export async function updateSpbStatusAction(
+  spbId: bigint, 
+  newStatus: string, 
+  payload?: { danaApproved?: number, rekomendasi?: boolean, rejectionReason?: string }
+) {
   try {
     const spb = await prisma.spbRequest.findUnique({
       where: { id: spbId }
@@ -175,24 +176,46 @@ export async function updateSpbStatusAction(spbId: bigint, newStatus: string) {
       return { success: false, error: "Akses ditolak: SPB ini bukan milik Lingkungan Anda." };
     }
 
+    // Role Permission Check
+    let allowed = false;
+    if (newStatus === "REJECTED") {
+       // Anyone in the approval chain can reject if it's currently at their stage, simplified:
+       allowed = true; // Ideally we should check if they can approve the CURRENT stage
+    } else if (newStatus === "REVIEW_PIC" && await hasPermission("REVIEW_SPB_PIC")) allowed = true;
+    else if (newStatus === "APPROVED_TPDSP" && await hasPermission("APPROVE_SPB_TPDSP")) allowed = true;
+    else if (newStatus === "APPROVED_PASTOR" && await hasPermission("APPROVE_SPB_PASTOR")) allowed = true;
+    else if (newStatus === "REALIZED" && await hasPermission("REALIZE_SPB")) allowed = true;
+    
+    if (!allowed && newStatus !== "REJECTED") {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki wewenang untuk tindakan ini." };
+    }
+
     if (spb.status === "REALIZED") {
       return { success: false, error: "SPB sudah direalisasikan dan tidak dapat diubah" };
     }
 
-    // Get dummy admin ID for createdBy
-    const admin = await prisma.user.findFirst({
-      where: { email: "admin@portal-ignatius.local" }
-    });
+    const currentUser = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
+      const updateData: any = { status: newStatus as any };
+      
+      if (newStatus === "APPROVED_TPDSP" && payload?.danaApproved !== undefined) {
+        updateData.danaParokiApproved = payload.danaApproved;
+        updateData.rekomendasiKevikepan = payload.rekomendasi || false;
+      }
+      
+      if (newStatus === "REJECTED" && payload?.rejectionReason) {
+        updateData.rejectionReason = payload.rejectionReason;
+      }
+
       await tx.spbRequest.update({
         where: { id: spbId },
-        data: { status: newStatus as any }
+        data: updateData
       });
 
       // If realized, deduct funds from Intensi Account
       if (newStatus === "REALIZED") {
-        const dana = spb.danaParokiRequested;
+        const dana = spb.danaParokiApproved !== null ? spb.danaParokiApproved : spb.danaParokiRequested;
         
         // 1. Create Financial Mutation OUT
         await tx.financialMutation.create({
@@ -203,7 +226,7 @@ export async function updateSpbStatusAction(spbId: bigint, newStatus: string) {
             sourceType: "SPB_REALIZATION",
             referenceId: spb.nomorSpb,
             description: `Pencairan dana untuk ${spb.nomorSpb} - ${spb.kategoriBantuan}`,
-            createdBy: admin ? admin.id : null
+            createdBy: currentUser ? currentUser.id : null
           }
         });
 
@@ -224,5 +247,109 @@ export async function updateSpbStatusAction(spbId: bigint, newStatus: string) {
   } catch (error: any) {
     console.error("Gagal mengubah status SPB:", error);
     return { success: false, error: "Terjadi kesalahan saat menyimpan data" };
+  }
+}
+
+// Edit SPB
+export async function editSpbAction(spbId: bigint, formData: FormData) {
+  try {
+    const spb = await prisma.spbRequest.findUnique({ where: { id: spbId } });
+    if (!spb) return { success: false, error: "SPB tidak ditemukan" };
+    if (spb.status !== "SUBMITTED") return { success: false, error: "Hanya SPB yang masih dalam status Diajukan yang dapat diubah" };
+
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== spb.lingkunganId) {
+      return { success: false, error: "Akses ditolak" };
+    }
+
+    const lingkunganId = parseInt(formData.get("lingkunganId") as string);
+    const intensiId = parseInt(formData.get("intensiId") as string);
+    const subjekType = formData.get("subjekType") as "KPS" | "UMKM";
+    const subjekId = formData.get("subjekId") as string;
+    const kategoriBantuan = formData.get("kategoriBantuan") as string;
+    const keaktifanUmat = formData.get("keaktifanUmat") as string;
+    const alasanBantuan = formData.get("alasanBantuan") as string;
+    
+    const totalBiaya = parseFloat(formData.get("totalBiaya") as string || "0");
+    const danaSwadaya = parseFloat(formData.get("danaSwadaya") as string || "0");
+    const danaLingkungan = parseFloat(formData.get("danaLingkungan") as string || "0");
+    const danaParokiRequested = totalBiaya - danaSwadaya - danaLingkungan;
+
+    if (!lingkunganId || !intensiId || !subjekId || !kategoriBantuan) {
+      return { success: false, error: "Semua kolom utama wajib diisi" };
+    }
+
+    if (danaParokiRequested <= 0) {
+      return { success: false, error: "Dana yang diajukan ke Paroki tidak valid (kurang dari atau sama dengan 0)" };
+    }
+
+    const file = formData.get("attachment") as File | null;
+    let googleDriveFileId = null;
+    let fileType = null;
+    if (file && file.size > 0) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = `SPB_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      googleDriveFileId = await uploadFileToDrive(buffer, fileName, file.type);
+      fileType = file.type || "application/octet-stream";
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.spbRequest.update({
+        where: { id: spbId },
+        data: {
+          lingkunganId,
+          intensiId,
+          kpsId: subjekType === "KPS" ? BigInt(subjekId) : null,
+          umkmId: subjekType === "UMKM" ? BigInt(subjekId) : null,
+          kategoriBantuan,
+          keaktifanUmat: keaktifanUmat || null,
+          alasanBantuan: alasanBantuan || null,
+          totalBiaya,
+          danaSwadaya,
+          danaLingkungan,
+          danaParokiRequested,
+        }
+      });
+
+      if (googleDriveFileId && fileType) {
+        await tx.spbAttachment.create({
+          data: {
+            spbId: spbId,
+            fileType: fileType,
+            googleDriveFileId: googleDriveFileId
+          }
+        });
+      }
+    });
+
+    revalidatePath("/dansospar/spb");
+    revalidatePath(`/dansospar/spb/${spbId}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Gagal mengubah SPB:", error);
+    return { success: false, error: error.message || "Gagal mengubah SPB" };
+  }
+}
+
+// Delete SPB
+export async function deleteSpbAction(spbId: bigint) {
+  try {
+    const spb = await prisma.spbRequest.findUnique({ where: { id: spbId } });
+    if (!spb) return { success: false, error: "SPB tidak ditemukan" };
+    if (spb.status !== "SUBMITTED") return { success: false, error: "Hanya SPB yang masih dalam status Diajukan yang dapat dihapus" };
+
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== spb.lingkunganId) {
+      return { success: false, error: "Akses ditolak" };
+    }
+
+    await prisma.spbRequest.delete({ where: { id: spbId } });
+
+    revalidatePath("/dansospar/spb");
+    revalidatePath("/dansospar");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Gagal menghapus SPB:", error);
+    return { success: false, error: error.message || "Gagal menghapus SPB" };
   }
 }

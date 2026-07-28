@@ -80,7 +80,7 @@ export const getLingkunganRestriction = async () => {
   if (!user || !user.isActive) return { restricted: true, lingkunganId: -1 };
 
   // Roles that have global view access
-  const globalRoles = ["SUPER_ADMIN", "Ketua Dansospar", "Sekretaris Dansospar", "Bendahara Dansospar", "Pastor"];
+  const globalRoles = ["SUPER_ADMIN", "Ketua PSE", "Ketua Dansospar", "Sekretaris Dansospar", "Bendahara Dansospar", "Pastor"];
   
   let isGlobal = false;
   for (const userRole of user.userRoles) {

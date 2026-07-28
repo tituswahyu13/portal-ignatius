@@ -64,7 +64,7 @@ export function CreateUserDialog({ roles, lingkungan }: { roles: any[], lingkung
     // Jika lingkungan tidak dipilih, kirim null
     const submitData = {
       ...values,
-      lingkunganId: values.lingkunganId === "none" ? undefined : values.lingkunganId,
+      lingkunganId: values.lingkunganId === "none" ? null : values.lingkunganId,
     };
 
     const res = await createUserAction(submitData);

@@ -235,6 +235,8 @@ model SpbRequest {
   danaSwadaya            Decimal   @default(0) @map("dana_swadaya") @db.Decimal(15, 2)
   danaLingkungan         Decimal   @default(0) @map("dana_lingkungan") @db.Decimal(15, 2)
   danaParokiRequested    Decimal   @map("dana_paroki_requested") @db.Decimal(15, 2)
+  danaParokiApproved     Decimal?  @map("dana_paroki_approved") @db.Decimal(15, 2)
+  rekomendasiKevikepan   Boolean   @default(false) @map("rekomendasi_kevikepan")
   danaKevikepanRequested Decimal   @default(0) @map("dana_kevikepan_requested") @db.Decimal(15, 2)
   keaktifanUmat          String?   @map("keaktifan_umat") @db.VarChar(50)
   alasanBantuan          String?   @map("alasan_bantuan") @db.Text
