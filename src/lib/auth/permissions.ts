@@ -25,7 +25,7 @@ export const getCurrentUser = cache(async () => {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
+  const userPromise = prisma.user.findUnique({
     where: { email: authUser.email },
     include: {
       userRoles: {
@@ -43,6 +43,15 @@ export const getCurrentUser = cache(async () => {
       },
     },
   });
+
+  const timeoutPromise = new Promise<null>((resolve) => {
+    setTimeout(() => {
+      console.error("Prisma query timed out after 5 seconds");
+      resolve(null);
+    }, 5000);
+  });
+
+  const user = await Promise.race([userPromise, timeoutPromise]);
 
   return user;
 });
