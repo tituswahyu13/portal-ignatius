@@ -3,6 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { encryptString, decryptString } from "@/lib/encryption";
+import { getLingkunganRestriction } from "@/lib/auth/permissions";
 
 export async function createUmkmAction(formData: FormData) {
   try {
@@ -30,6 +31,11 @@ export async function createUmkmAction(formData: FormData) {
       return { success: false, error: "Nama pemilik, usaha, dan lingkungan wajib diisi" };
     }
 
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
+    }
+
     await prisma.umkmData.create({
       data: {
         namaPemilik,
@@ -55,7 +61,13 @@ export async function createUmkmAction(formData: FormData) {
 
 export async function getUmkmData() {
   try {
+    const restriction = await getLingkunganRestriction();
+    const whereClause = restriction.restricted 
+      ? { lingkunganId: restriction.lingkunganId }
+      : {};
+
     const rawData = await prisma.umkmData.findMany({
+      where: whereClause,
       include: {
         lingkungan: true,
         kpsData: true
@@ -106,6 +118,18 @@ export async function updateUmkmAction(id: string, formData: FormData) {
       return { success: false, error: "Nama pemilik, usaha, dan lingkungan wajib diisi" };
     }
 
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return { success: false, error: "Akses ditolak: Lingkungan tujuan tidak sesuai." };
+    }
+    
+    if (restriction.restricted) {
+      const existing = await prisma.umkmData.findUnique({ where: { id: BigInt(id) } });
+      if (existing && existing.lingkunganId !== restriction.lingkunganId) {
+        return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
+      }
+    }
+
     await prisma.umkmData.update({
       where: { id: BigInt(id) },
       data: {
@@ -132,6 +156,14 @@ export async function updateUmkmAction(id: string, formData: FormData) {
 
 export async function deleteUmkmAction(id: string) {
   try {
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted) {
+      const existing = await prisma.umkmData.findUnique({ where: { id: BigInt(id) } });
+      if (existing && existing.lingkunganId !== restriction.lingkunganId) {
+        return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
+      }
+    }
+
     await prisma.umkmData.delete({
       where: { id: BigInt(id) }
     });
@@ -145,6 +177,11 @@ export async function deleteUmkmAction(id: string) {
 
 export async function getKpsByLingkungan(lingkunganId: number) {
   try {
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return [];
+    }
+
     const data = await prisma.kpsData.findMany({
       where: { lingkunganId },
       orderBy: { namaKepalaKeluarga: 'asc' },

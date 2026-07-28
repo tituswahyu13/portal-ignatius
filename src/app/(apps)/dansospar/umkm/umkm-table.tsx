@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,27 @@ import { deleteUmkmAction } from "./actions";
 import { formatRupiah } from "@/lib/utils";
 import { EditUmkmDialog } from "./edit-umkm-dialog";
 
-export function UmkmTable({ umkmData, lingkungan }: { umkmData: any[], lingkungan: any[] }) {
+export function UmkmTable({ 
+  umkmData, 
+  lingkungan,
+  canWrite = true,
+  canDelete = true
+}: { 
+  umkmData: any[], 
+  lingkungan: any[],
+  canWrite?: boolean,
+  canDelete?: boolean
+}) {
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data UMKM ini?")) {
-      await deleteUmkmAction(id);
+      setIsDeleting(id);
+      try {
+        await deleteUmkmAction(id);
+      } finally {
+        setIsDeleting(null);
+      }
     }
   };
 
@@ -62,11 +80,21 @@ export function UmkmTable({ umkmData, lingkungan }: { umkmData: any[], lingkunga
                     <Badge variant="destructive">Melebihi Batas</Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-right flex items-center justify-end gap-2">
-                  <EditUmkmDialog umkm={umkm} lingkungan={lingkungan} />
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(umkm.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    {canWrite && <EditUmkmDialog umkm={umkm} lingkungan={lingkungan} />}
+                    {canDelete && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        disabled={isDeleting === umkm.id}
+                        onClick={() => handleDelete(umkm.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        {isDeleting === umkm.id ? "Menghapus..." : "Hapus"}
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

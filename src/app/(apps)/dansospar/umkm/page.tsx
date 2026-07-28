@@ -3,9 +3,21 @@ import { getUmkmData } from "./actions";
 import { CreateUmkmDialog } from "./create-umkm-dialog";
 import { UmkmTable } from "./umkm-table";
 
+import { hasPermission, getLingkunganRestriction } from "@/lib/auth/permissions";
+import { Unauthorized } from "@/components/unauthorized";
+
 export const dynamic = "force-dynamic";
 
 export default async function UmkmManagementPage() {
+  const allowed = await hasPermission("UMKM_READ");
+  if (!allowed) {
+    return <Unauthorized />;
+  }
+
+  const canWrite = await hasPermission("UMKM_UPDATE");
+  const canDelete = await hasPermission("UMKM_DELETE");
+  const restriction = await getLingkunganRestriction();
+
   const lingkungan = await getLingkungan();
   const umkmData = await getUmkmData();
 
@@ -18,10 +30,18 @@ export default async function UmkmManagementPage() {
             Kelola pendaftaran UMKM. Sistem akan otomatis menentukan kelayakan berdasarkan Aset dan Omset.
           </p>
         </div>
-        <CreateUmkmDialog lingkungan={lingkungan} />
+        <CreateUmkmDialog 
+          lingkungan={lingkungan}
+          restriction={restriction}
+        />
       </div>
 
-      <UmkmTable umkmData={umkmData} lingkungan={lingkungan} />
+      <UmkmTable 
+        umkmData={umkmData} 
+        lingkungan={lingkungan}
+        canWrite={canWrite}
+        canDelete={canDelete}
+      />
     </div>
   );
 }

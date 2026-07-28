@@ -17,7 +17,21 @@ import { Button } from "@/components/ui/button";
 
 import { logout } from "../(auth)/login/actions";
 
-export function PortalSidebar() {
+interface PortalSidebarProps {
+  userName: string;
+  roleName: string;
+  initials: string;
+  canAccessDansospar: boolean;
+  canAccessGlobal: boolean;
+}
+
+export function PortalSidebar({
+  userName,
+  roleName,
+  initials,
+  canAccessDansospar,
+  canAccessGlobal
+}: PortalSidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -86,33 +100,37 @@ export function PortalSidebar() {
               Modul Aktif
             </div>
             
-            <Link
-              href="/dansospar"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                pathname?.startsWith("/dansospar") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
-              }`}
-            >
-              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
-                pathname?.startsWith("/dansospar") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}>
-                ⛪
-              </div>
-              <span className="whitespace-nowrap">DanSosPar</span>
-            </Link>
+            {canAccessDansospar && (
+              <Link
+                href="/dansospar"
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname?.startsWith("/dansospar") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                }`}
+              >
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                  pathname?.startsWith("/dansospar") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  ⛪
+                </div>
+                <span className="whitespace-nowrap">DanSosPar</span>
+              </Link>
+            )}
 
-            <Link
-              href="/usermanagement"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                pathname?.startsWith("/usermanagement") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
-              }`}
-            >
-              <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
-                pathname?.startsWith("/usermanagement") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-              }`}>
-                👥
-              </div>
-              <span className="whitespace-nowrap">Manajemen User</span>
-            </Link>
+            {canAccessGlobal && (
+              <Link
+                href="/usermanagement"
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname?.startsWith("/usermanagement") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                }`}
+              >
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                  pathname?.startsWith("/usermanagement") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  👥
+                </div>
+                <span className="whitespace-nowrap">Manajemen User</span>
+              </Link>
+            )}
           </nav>
           
           <div className="px-4 mt-auto border-t pt-4">
@@ -120,12 +138,12 @@ export function PortalSidebar() {
               <DropdownMenuTrigger className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2">
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                    AD
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col text-left overflow-hidden">
-                  <span className="text-sm font-medium text-foreground leading-none truncate">Admin</span>
-                  <span className="text-xs text-muted-foreground mt-1 truncate">Super Admin</span>
+                  <span className="text-sm font-medium text-foreground leading-none truncate">{userName}</span>
+                  <span className="text-xs text-muted-foreground mt-1 truncate">{roleName}</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

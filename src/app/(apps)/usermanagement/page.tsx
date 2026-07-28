@@ -13,6 +13,8 @@ import { CreateUserDialog } from "./create-user-dialog";
 import { UserActionsMenu } from "./user-actions-menu";
 import { RoleMatrix } from "./role-matrix";
 import { UserFilters } from "./user-filters";
+import { hasPermission } from "@/lib/auth/permissions";
+import { Unauthorized } from "@/components/unauthorized";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,11 @@ export default async function UserManagementPage({
 }: {
   searchParams: { search?: string; role?: string; status?: string };
 }) {
+  const allowed = await hasPermission("USERS_READ");
+  if (!allowed) {
+    return <Unauthorized />;
+  }
+
   const roles = await getRoles();
   const lingkungan = await getLingkungan();
   const permissions = await getPermissions();

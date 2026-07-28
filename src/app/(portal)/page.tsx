@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { hasModuleAccess } from "@/lib/auth/permissions";
 import { Users, Wallet, UsersRound, Landmark } from "lucide-react";
 import {
   Card,
@@ -8,36 +9,50 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const apps = [
-  {
-    name: "Manajemen User",
-    description: "Kelola pengguna, role, dan hak akses portal.",
-    href: "/usermanagement",
-    icon: Users,
-  },
-  {
-    name: "Dana Sosial Paroki",
-    description: "Pengelolaan dana sosial, SPB, dan realisasi.",
-    href: "/dansospar",
-    icon: Wallet,
-  },
-  {
-    name: "Data Umat",
-    description: "Sistem data umat paroki.",
-    href: "/dataumat",
-    icon: UsersRound,
-    comingSoon: true,
-  },
-  {
-    name: "Keuangan Paroki",
-    description: "Pengelolaan keuangan paroki.",
-    href: "/keuangan",
-    icon: Landmark,
-    comingSoon: true,
-  },
-];
+// Note: We use dynamic checking below instead of a static array
+// so we can filter based on permissions.
+export const dynamic = "force-dynamic";
 
-export default function PortalPage() {
+export default async function PortalPage() {
+  const canAccessGlobal = await hasModuleAccess("GLOBAL");
+  const canAccessDansospar = await hasModuleAccess("DANSOSPAR");
+
+  const apps = [
+    ...(canAccessGlobal
+      ? [
+          {
+            name: "Manajemen User",
+            description: "Kelola pengguna, role, dan hak akses portal.",
+            href: "/usermanagement",
+            icon: Users,
+          },
+        ]
+      : []),
+    ...(canAccessDansospar
+      ? [
+          {
+            name: "Dana Sosial Paroki",
+            description: "Pengelolaan dana sosial, SPB, dan realisasi.",
+            href: "/dansospar",
+            icon: Wallet,
+          },
+        ]
+      : []),
+    {
+      name: "Data Umat",
+      description: "Sistem data umat paroki.",
+      href: "/dataumat",
+      icon: UsersRound,
+      comingSoon: true,
+    },
+    {
+      name: "Keuangan Paroki",
+      description: "Pengelolaan keuangan paroki.",
+      href: "/keuangan",
+      icon: Landmark,
+      comingSoon: true,
+    },
+  ];
   return (
     <div className="container py-10">
       <div className="mb-8">

@@ -1,16 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Eye } from "lucide-react";
 import { deleteKpsAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { EditKpsDialog } from "./edit-kps-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export function KpsTable({ kpsData, lingkungan }: { kpsData: any[], lingkungan: any[] }) {
+export function KpsTable({ 
+  kpsData, 
+  lingkungan,
+  canWrite = true,
+  canDelete = true
+}: { 
+  kpsData: any[], 
+  lingkungan: any[],
+  canWrite?: boolean,
+  canDelete?: boolean
+}) {
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data KPS ini?")) {
-      await deleteKpsAction(id);
+      setIsDeleting(id);
+      try {
+        await deleteKpsAction(id);
+      } finally {
+        setIsDeleting(null);
+      }
     }
   };
 
@@ -36,28 +55,97 @@ export function KpsTable({ kpsData, lingkungan }: { kpsData: any[], lingkungan: 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {kpsData.map((kps) => (
-            <TableRow key={kps.id}>
-              <TableCell className="font-medium">{kps.lingkungan?.namaLingkungan || "Tidak diketahui"}</TableCell>
-              <TableCell>{kps.namaKepalaKeluarga}</TableCell>
+          {kpsData.map((item) => (
+            <TableRow key={item.id}>
+              <TableCell className="font-medium">{item.lingkungan?.namaLingkungan || "Tidak diketahui"}</TableCell>
+              <TableCell>{item.namaKepalaKeluarga}</TableCell>
               <TableCell>
-                <code className="text-xs bg-muted px-1 py-0.5 rounded">{kps.nikDecryptedMasked}</code>
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</code>
               </TableCell>
               <TableCell>
-                {kps.statusKeluarga === "Prasejahtera" ? (
-                  <Badge variant="destructive">Prasejahtera ({kps.persentaseKelayakan}%)</Badge>
+                {item.statusKeluarga === "Prasejahtera" ? (
+                  <Badge variant="destructive">Prasejahtera ({item.persentaseKelayakan}%)</Badge>
                 ) : (
-                  <Badge variant="default" className="bg-green-600 hover:bg-green-700">Sejahtera ({kps.persentaseKelayakan}%)</Badge>
+                  <Badge variant="default" className="bg-green-600 hover:bg-green-700">Sejahtera ({item.persentaseKelayakan}%)</Badge>
                 )}
               </TableCell>
               <TableCell>
-                <span className="font-semibold">{kps.totalSkor}</span> / 21
+                <span className="font-semibold">{item.totalSkor}</span> / 21
               </TableCell>
-              <TableCell className="text-right flex items-center justify-end gap-2">
-                <EditKpsDialog kps={kps} lingkungan={lingkungan} />
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(kps.id)}>
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
+              <TableCell>
+                <div className="flex gap-2 justify-end">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        Detail
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Detail Data KPS</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-4 text-sm">
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Lingkungan</span>
+                          <span className="col-span-2 font-medium">{item.lingkungan?.namaLingkungan}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Kepala Keluarga</span>
+                          <span className="col-span-2 font-medium">{item.namaKepalaKeluarga}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">NIK</span>
+                          <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">No. KK</span>
+                          <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.kkDecryptedMasked}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">No. HP</span>
+                          <span className="col-span-2 font-medium">{item.noHp || "-"}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Pekerjaan</span>
+                          <span className="col-span-2 font-medium">{item.pekerjaan || "-"}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Tgl Lahir</span>
+                          <span className="col-span-2 font-medium">{item.tanggalLahir ? new Date(item.tanggalLahir).toLocaleDateString('id-ID') : "-"}</span>
+                        </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Alamat</span>
+                          <span className="col-span-2 font-medium">{item.alamat}</span>
+                        </div>
+                        <div className="pt-2">
+                          <p className="font-semibold mb-2">Penilaian Kelayakan:</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <div className="flex justify-between"><span>Pekerjaan:</span> <span className="font-bold">{item.skorPekerjaan}</span></div>
+                            <div className="flex justify-between"><span>Kesehatan:</span> <span className="font-bold">{item.skorKesehatan}</span></div>
+                            <div className="flex justify-between"><span>Sandang:</span> <span className="font-bold">{item.skorSandang}</span></div>
+                            <div className="flex justify-between"><span>Pendidikan:</span> <span className="font-bold">{item.skorPendidikan}</span></div>
+                            <div className="flex justify-between"><span>Pangan:</span> <span className="font-bold">{item.skorPangan}</span></div>
+                            <div className="flex justify-between"><span>Sosial:</span> <span className="font-bold">{item.skorSosial}</span></div>
+                            <div className="flex justify-between"><span>Papan:</span> <span className="font-bold">{item.skorPapan}</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  {canWrite && <EditKpsDialog kps={item} lingkungan={lingkungan} />}
+                  {canDelete && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      disabled={isDeleting === item.id}
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      {isDeleting === item.id ? "Menghapus..." : "Hapus"}
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

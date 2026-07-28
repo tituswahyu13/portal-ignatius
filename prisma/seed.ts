@@ -91,7 +91,18 @@ async function main() {
     { name: "REVIEW_SPB_PIC", appModule: "DANSOSPAR", desc: "Review SPB sebagai PIC (Ketua Lingkungan/Wilayah)" },
     { name: "APPROVE_SPB_TPDSP", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Tim Pelayanan DanSosPar" },
     { name: "APPROVE_SPB_PASTOR", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Pastor" },
-    { name: "REALIZE_SPB", appModule: "DANSOSPAR", desc: "Cairkan dana SPB (Bendahara)" }
+    { name: "REALIZE_SPB", appModule: "DANSOSPAR", desc: "Cairkan dana SPB (Bendahara)" },
+    
+    // Kas & Intensi
+    { name: "INTENSI_CREATE", appModule: "DANSOSPAR", desc: "Buat akun/pos intensi baru" },
+    { name: "INTENSI_READ", appModule: "DANSOSPAR", desc: "Lihat daftar akun/pos intensi" },
+    { name: "INTENSI_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data akun/pos intensi" },
+    { name: "INTENSI_DELETE", appModule: "DANSOSPAR", desc: "Hapus akun/pos intensi" },
+
+    { name: "MUTASI_CREATE", appModule: "DANSOSPAR", desc: "Buat mutasi kas (pemasukan/pengeluaran) baru" },
+    { name: "MUTASI_READ", appModule: "DANSOSPAR", desc: "Lihat data mutasi kas" },
+    { name: "MUTASI_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data mutasi kas" },
+    { name: "MUTASI_DELETE", appModule: "DANSOSPAR", desc: "Hapus data mutasi kas" }
   ];
 
   for (const p of permissionsToCreate) {

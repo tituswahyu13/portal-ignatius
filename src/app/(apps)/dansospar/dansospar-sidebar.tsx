@@ -3,10 +3,22 @@
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function DanSosParSidebar() {
+interface DanSosParSidebarProps {
+  canReadKps: boolean;
+  canReadUmkm: boolean;
+  canReadSpb: boolean;
+  canReadKeuangan: boolean;
+}
+
+export function DanSosParSidebar({
+  canReadKps,
+  canReadUmkm,
+  canReadSpb,
+  canReadKeuangan,
+}: DanSosParSidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -72,17 +84,21 @@ export function DanSosParSidebar() {
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           <SidebarItem href="/dansospar" icon={<LayoutDashboard size={20} />} label="Dashboard" currentPath={pathname} />
           
-          <div className="pt-4 pb-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Master Data</p>
-          </div>
-          <SidebarItem href="/dansospar/kps" icon={<Users size={20} />} label="Data KPS" currentPath={pathname} />
-          <SidebarItem href="/dansospar/umkm" icon={<Store size={20} />} label="Data UMKM" currentPath={pathname} />
+          {(canReadKps || canReadUmkm) && (
+            <div className="pt-4 pb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Master Data</p>
+            </div>
+          )}
+          {canReadKps && <SidebarItem href="/dansospar/kps" icon={<Users size={20} />} label="Data KPS" currentPath={pathname} />}
+          {canReadUmkm && <SidebarItem href="/dansospar/umkm" icon={<Store size={20} />} label="Data UMKM" currentPath={pathname} />}
           
-          <div className="pt-4 pb-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Manajemen</p>
-          </div>
-          <SidebarItem href="/dansospar/spb" icon={<FileText size={20} />} label="Pengajuan SPB" currentPath={pathname} />
-          <SidebarItem href="/dansospar/keuangan" icon={<Wallet size={20} />} label="Kas & Intensi" currentPath={pathname} />
+          {(canReadSpb || canReadKeuangan) && (
+            <div className="pt-4 pb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Manajemen</p>
+            </div>
+          )}
+          {canReadSpb && <SidebarItem href="/dansospar/spb" icon={<FileText size={20} />} label="Pengajuan SPB" currentPath={pathname} />}
+          {canReadKeuangan && <SidebarItem href="/dansospar/keuangan" icon={<Wallet size={20} />} label="Kas & Intensi" currentPath={pathname} />}
         </nav>
 
         <div className="p-4 border-t bg-background">

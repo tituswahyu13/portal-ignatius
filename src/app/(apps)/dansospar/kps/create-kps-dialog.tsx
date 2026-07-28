@@ -60,7 +60,13 @@ const INDICATORS = [
   }
 ];
 
-export function CreateKpsDialog({ lingkungan }: { lingkungan: any[] }) {
+export function CreateKpsDialog({ 
+  lingkungan,
+  restriction
+}: { 
+  lingkungan: any[],
+  restriction?: { restricted: boolean, lingkunganId: number }
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -99,18 +105,26 @@ export function CreateKpsDialog({ lingkungan }: { lingkungan: any[] }) {
               <Label>Nama Kepala Keluarga</Label>
               <Input name="namaKepalaKeluarga" required placeholder="Sesuai KTP" />
             </div>
-            <div className="space-y-2">
-              <Label>Pilih Lingkungan</Label>
-              <Select name="lingkunganId" required>
+            <div className="grid gap-2">
+              <Label htmlFor="lingkunganId">Lingkungan <span className="text-red-500">*</span></Label>
+              <Select 
+                name="lingkunganId" 
+                defaultValue={restriction?.restricted ? restriction.lingkunganId.toString() : ""}
+                disabled={restriction?.restricted}
+                required
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Lingkungan" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lingkungan.map((l) => (
+                  {lingkungan.map((l: any) => (
                     <SelectItem key={l.id} value={l.id.toString()}>{l.namaLingkungan}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {restriction?.restricted && (
+                <input type="hidden" name="lingkunganId" value={restriction.lingkunganId.toString()} />
+              )}
             </div>
           </div>
 

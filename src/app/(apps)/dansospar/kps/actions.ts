@@ -3,6 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { encryptString, decryptString } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
+import { getLingkunganRestriction } from "@/lib/auth/permissions";
 
 export async function createKpsAction(formData: FormData) {
   try {
@@ -14,6 +15,11 @@ export async function createKpsAction(formData: FormData) {
     
     if (!namaKepalaKeluarga || !nik || !kk || !alamat || !lingkunganId) {
       return { success: false, error: "Semua kolom wajib diisi" };
+    }
+
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
     // Ambil nilai skor (0 berarti N/A atau tidak dinilai)
@@ -88,7 +94,14 @@ export async function createKpsAction(formData: FormData) {
 
 export async function getKpsData() {
   try {
+    const restriction = await getLingkunganRestriction();
+    
+    const whereClause = restriction.restricted 
+      ? { lingkunganId: restriction.lingkunganId }
+      : {};
+
     const rawData = await prisma.kpsData.findMany({
+      where: whereClause,
       include: {
         lingkungan: true
       },
@@ -135,6 +148,18 @@ export async function updateKpsAction(id: string, formData: FormData) {
     
     if (!namaKepalaKeluarga || !alamat || !lingkunganId) {
       return { success: false, error: "Kolom wajib harus diisi" };
+    }
+
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return { success: false, error: "Akses ditolak: Lingkungan tujuan tidak sesuai." };
+    }
+    
+    if (restriction.restricted) {
+      const existing = await prisma.kpsData.findUnique({ where: { id: BigInt(id) } });
+      if (existing && existing.lingkunganId !== restriction.lingkunganId) {
+        return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
+      }
     }
 
     const skorPekerjaan = parseInt(formData.get("skorPekerjaan") as string || "0");
@@ -217,6 +242,14 @@ export async function updateKpsAction(id: string, formData: FormData) {
 
 export async function deleteKpsAction(id: string) {
   try {
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted) {
+      const existing = await prisma.kpsData.findUnique({ where: { id: BigInt(id) } });
+      if (existing && existing.lingkunganId !== restriction.lingkunganId) {
+        return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
+      }
+    }
+
     await prisma.kpsData.delete({
       where: { id: BigInt(id) }
     });

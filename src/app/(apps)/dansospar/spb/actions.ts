@@ -3,11 +3,17 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { uploadFileToDrive } from "@/lib/gdrive";
+import { getLingkunganRestriction } from "@/lib/auth/permissions";
 
 // Get data for form dropdowns
 export async function getSpbFormData() {
+  const restriction = await getLingkunganRestriction();
+  const lingkunganWhere = restriction.restricted 
+    ? { id: restriction.lingkunganId }
+    : {};
+
   const [lingkungans, intensis] = await Promise.all([
-    prisma.lingkungan.findMany({ orderBy: { namaLingkungan: 'asc' } }),
+    prisma.lingkungan.findMany({ where: lingkunganWhere, orderBy: { namaLingkungan: 'asc' } }),
     prisma.intensiAccount.findMany({ orderBy: { id: 'asc' } })
   ]);
   
@@ -16,6 +22,11 @@ export async function getSpbFormData() {
 
 // Get Subjek (KPS/UMKM) by Lingkungan
 export async function getSubjekByLingkungan(lingkunganId: number, type: "KPS" | "UMKM") {
+  const restriction = await getLingkunganRestriction();
+  if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+    return [];
+  }
+
   if (type === "KPS") {
     const kps = await prisma.kpsData.findMany({
       where: { lingkunganId },
@@ -52,6 +63,11 @@ export async function createSpbAction(formData: FormData) {
 
     if (!lingkunganId || !intensiId || !subjekId || !kategoriBantuan) {
       return { success: false, error: "Semua kolom utama wajib diisi" };
+    }
+
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && restriction.lingkunganId !== lingkunganId) {
+      return { success: false, error: "Akses ditolak: Anda hanya dapat membuat SPB untuk Lingkungan Anda sendiri." };
     }
 
     if (danaParokiRequested <= 0) {
@@ -148,6 +164,15 @@ export async function updateSpbStatusAction(spbId: bigint, newStatus: string) {
 
     if (!spb) {
       return { success: false, error: "SPB tidak ditemukan" };
+    }
+
+    // Restriction check: SPB realization or status update
+    // If restricted, they can't update status of other lingkungan's SPB, 
+    // BUT typically restricted users shouldn't be updating status (approval) anyway! 
+    // So this is a defense-in-depth measure.
+    const restriction = await getLingkunganRestriction();
+    if (restriction.restricted && spb.lingkunganId !== restriction.lingkunganId) {
+      return { success: false, error: "Akses ditolak: SPB ini bukan milik Lingkungan Anda." };
     }
 
     if (spb.status === "REALIZED") {

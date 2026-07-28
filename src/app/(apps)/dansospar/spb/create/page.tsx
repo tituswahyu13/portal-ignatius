@@ -1,10 +1,12 @@
 import { getSpbFormData } from "../actions";
 import { CreateSpbForm } from "./create-spb-form";
+import { getLingkunganRestriction } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
 export default async function CreateSpbPage() {
   const { lingkungans, intensis } = await getSpbFormData();
+  const restriction = await getLingkunganRestriction();
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
@@ -15,7 +17,7 @@ export default async function CreateSpbPage() {
         </p>
       </div>
 
-      <CreateSpbForm lingkungans={lingkungans} intensis={intensis} />
+      <CreateSpbForm lingkungans={lingkungans} intensis={intensis} restriction={restriction} />
     </div>
   );
 }

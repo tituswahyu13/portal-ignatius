@@ -8,7 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createUmkmAction, getKpsByLingkungan } from "./actions";
 
-export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
+export function CreateUmkmDialog({ 
+  lingkungan,
+  restriction
+}: { 
+  lingkungan: any[],
+  restriction?: { restricted: boolean, lingkunganId: number }
+}) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,6 +22,13 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
   const [selectedLingkungan, setSelectedLingkungan] = useState<string>("");
   const [kpsList, setKpsList] = useState<any[]>([]);
   const [isKps, setIsKps] = useState(false);
+
+  // Initialize selected lingkungan if restricted
+  useEffect(() => {
+    if (restriction?.restricted) {
+      setSelectedLingkungan(restriction.lingkunganId.toString());
+    }
+  }, [restriction]);
 
   // Load KPS when lingkungan changes
   useEffect(() => {
@@ -69,7 +82,13 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Pilih Lingkungan</Label>
-              <Select name="lingkunganId" required value={selectedLingkungan} onValueChange={setSelectedLingkungan}>
+              <Select 
+                name="lingkunganId" 
+                required 
+                value={selectedLingkungan} 
+                onValueChange={setSelectedLingkungan}
+                disabled={restriction?.restricted}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Lingkungan" />
                 </SelectTrigger>
@@ -79,6 +98,9 @@ export function CreateUmkmDialog({ lingkungan }: { lingkungan: any[] }) {
                   ))}
                 </SelectContent>
               </Select>
+              {restriction?.restricted && (
+                <input type="hidden" name="lingkunganId" value={restriction.lingkunganId.toString()} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Nomor Induk Berusaha (NIB)</Label>

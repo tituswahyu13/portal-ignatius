@@ -21,7 +21,15 @@ const KATEGORI_BANTUAN = [
   "Bantuan Modal Usaha"
 ];
 
-export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], intensis: any[] }) {
+export function CreateSpbForm({ 
+  lingkungans, 
+  intensis,
+  restriction
+}: { 
+  lingkungans: any[], 
+  intensis: any[],
+  restriction?: { restricted: boolean, lingkunganId: number }
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,6 +45,13 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
   const [selectedIntensi, setSelectedIntensi] = useState<string>("");
 
   const danaParokiRequested = (Number(totalBiaya) || 0) - (Number(danaSwadaya) || 0) - (Number(danaLingkungan) || 0);
+
+  // Initialize selected lingkungan if restricted
+  useEffect(() => {
+    if (restriction?.restricted) {
+      setSelectedLingkungan(restriction.lingkunganId.toString());
+    }
+  }, [restriction]);
 
   // Auto-select Kas Intensi based on Kategori Bantuan
   useEffect(() => {
@@ -107,7 +122,13 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Asal Lingkungan</Label>
-            <Select name="lingkunganId" required onValueChange={setSelectedLingkungan} value={selectedLingkungan}>
+            <Select 
+              name="lingkunganId" 
+              required 
+              onValueChange={setSelectedLingkungan} 
+              value={selectedLingkungan}
+              disabled={restriction?.restricted}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Lingkungan" />
               </SelectTrigger>
@@ -117,6 +138,9 @@ export function CreateSpbForm({ lingkungans, intensis }: { lingkungans: any[], i
                 ))}
               </SelectContent>
             </Select>
+            {restriction?.restricted && (
+              <input type="hidden" name="lingkunganId" value={restriction.lingkunganId.toString()} />
+            )}
           </div>
           <div className="space-y-2">
             <Label>Kategori Subjek (Prioritas)</Label>

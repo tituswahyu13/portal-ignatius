@@ -3,11 +3,18 @@ import { SpbTable } from "./spb-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { getLingkunganRestriction } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
 export default async function SpbManagementPage() {
+  const restriction = await getLingkunganRestriction();
+  const whereClause = restriction.restricted 
+    ? { lingkunganId: restriction.lingkunganId }
+    : {};
+
   const spbList = await prisma.spbRequest.findMany({
+    where: whereClause,
     include: {
       lingkungan: { select: { namaLingkungan: true } },
       intensiAccount: { select: { namaIntensi: true } },
