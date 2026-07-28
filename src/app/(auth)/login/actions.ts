@@ -6,7 +6,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export async function loginWithEmail(formData: FormData) {
-  const email = formData.get("email") as string;
+  const rawEmail = formData.get("email") as string;
+  const email = rawEmail.includes("@") ? rawEmail : `${rawEmail}@ignatius.id`;
   const password = formData.get("password") as string;
   const cookieStore = cookies();
 

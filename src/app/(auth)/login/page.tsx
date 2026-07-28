@@ -27,12 +27,12 @@ export default function LoginPage({
 
       <form action={loginWithEmail} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email atau Username</Label>
           <Input
             id="email"
             name="email"
-            type="email"
-            placeholder="nama@email.com"
+            type="text"
+            placeholder="contoh: lingkungan.carolus1"
             required
           />
         </div>
