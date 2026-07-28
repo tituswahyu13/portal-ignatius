@@ -32,9 +32,10 @@ export async function updateSession(request: NextRequest) {
   // Check the session
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth/callback');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api');
 
-  if (!user && !isAuthPage) {
+  if (!user && !isAuthPage && !isApiRoute) {
     // If not logged in and not on login page, redirect to login
     const url = request.nextUrl.clone();
     url.pathname = '/login';
