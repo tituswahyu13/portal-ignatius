@@ -221,3 +221,44 @@ export async function bulkUpdatePermissions(changes: { roleId: number, permissio
     return { success: false, error: error.message };
   }
 }
+
+export async function resetUserPassword(email: string, newPassword: string) {
+  try {
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError || !usersData?.users) {
+      return { success: false, error: "Gagal memuat pengguna dari sistem autentikasi." };
+    }
+    
+    const targetUser = usersData.users.find(u => u.email === email);
+    if (!targetUser) {
+      return { success: false, error: "Pengguna tidak ditemukan di sistem autentikasi." };
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
+      password: newPassword
+    });
+
+    if (updateError) {
+      console.error("Supabase Update Error:", updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    // Insert audit log
+    const userInDb = await prisma.user.findUnique({ where: { email } });
+    if (userInDb) {
+      await prisma.auditLog.create({
+        data: {
+          action: "RESET_PASSWORD",
+          entity: "User",
+          entityId: userInDb.id.toString(),
+          details: `Administrator mereset password untuk akun ${email}`,
+        }
+      });
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error resetting password:", error);
+    return { success: false, error: error.message };
+  }
+}

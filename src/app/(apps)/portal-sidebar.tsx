@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,7 @@ export function PortalSidebar({
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Check if we are inside a specific module (like /dansospar)
   const isInsideModule = pathname?.startsWith("/dansospar") || pathname?.startsWith("/usermanagement");
@@ -149,7 +151,7 @@ export function PortalSidebar({
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profil</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)} className="cursor-pointer">Ubah Password</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <form action={logout}>
                   <button type="submit" className="w-full text-left">
@@ -163,6 +165,11 @@ export function PortalSidebar({
           </div>
         </div>
       </aside>
+
+      <ChangePasswordDialog 
+        open={isChangePasswordOpen} 
+        onOpenChange={setIsChangePasswordOpen} 
+      />
     </>
   );
 }

@@ -9,6 +9,15 @@ export const metadata: Metadata = {
   description:
     "Portal terpadu untuk pengelolaan dana sosial, data umat, dan keuangan Paroki St. Ignatius Magelang.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: '/icons/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-icon.png' }
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
