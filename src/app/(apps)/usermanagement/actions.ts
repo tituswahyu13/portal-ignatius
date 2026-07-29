@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
-import { prisma } from "@/lib/data/users";
+import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 // Kita menginisialisasi client Supabase khusus dengan SERVICE ROLE KEY
@@ -201,7 +201,7 @@ export async function bulkUpdatePermissions(changes: { roleId: number, permissio
       where: { roleId: { in: affectedRoleIds } }
     });
 
-    const notifications = affectedUsers.map(ur => ({
+    const notifications = affectedUsers.map((ur: any) => ({
       userId: ur.userId,
       title: "Perubahan Hak Akses",
       message: `Hak akses untuk salah satu role Anda telah diperbarui oleh Administrator.`,

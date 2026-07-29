@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { prisma } from "../data/users";
+import { db as prisma } from "@/lib/db";
 import { cache } from "react";
 
 // Cache this function so it only runs once per server request lifecycle

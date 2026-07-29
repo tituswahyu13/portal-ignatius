@@ -118,6 +118,22 @@ export function KpsTable({
                           <span className="font-semibold text-muted-foreground">Alamat</span>
                           <span className="col-span-2 font-medium">{item.alamat}</span>
                         </div>
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Dibuat</span>
+                          <span className="col-span-2 font-medium text-xs flex items-center">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleString('id-ID') : "-"}
+                            {item.creator?.name && <span className="text-muted-foreground ml-1">oleh {item.creator.name}</span>}
+                          </span>
+                        </div>
+                        {item.updatedAt && (
+                        <div className="grid grid-cols-3 border-b pb-2">
+                          <span className="font-semibold text-muted-foreground">Diperbarui</span>
+                          <span className="col-span-2 font-medium text-xs flex items-center">
+                            {new Date(item.updatedAt).toLocaleString('id-ID')}
+                            {item.updater?.name && <span className="text-muted-foreground ml-1">oleh {item.updater.name}</span>}
+                          </span>
+                        </div>
+                        )}
                         <div className="pt-2">
                           <p className="font-semibold mb-2">Penilaian Kelayakan:</p>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">

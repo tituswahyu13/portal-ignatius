@@ -91,8 +91,15 @@ export function SpbTable({
         onClick={() => router.push(`/dansospar/spb/${spb.id}`)}
       >
         <td className="px-4 py-3 font-medium text-primary underline-offset-2 hover:underline">{spb.nomorSpb}</td>
-        <td className="px-4 py-3 whitespace-nowrap">
-          {new Date(spb.submittedAt).toLocaleDateString("id-ID")}
+        <td className="px-4 py-3 whitespace-nowrap text-xs">
+          <div>Buat: {new Date(spb.submittedAt).toLocaleDateString("id-ID")}</div>
+          {spb.creator?.name && <div className="font-medium text-muted-foreground">{spb.creator.name}</div>}
+          {spb.updatedAt && (
+            <div className="mt-1">
+              <div>Ubah: {new Date(spb.updatedAt).toLocaleDateString("id-ID")}</div>
+              {spb.updater?.name && <div className="font-medium text-muted-foreground">{spb.updater.name}</div>}
+            </div>
+          )}
         </td>
         <td className="px-4 py-3 font-semibold">{pemohon}</td>
         <td className="px-4 py-3">{spb.lingkungan.namaLingkungan}</td>
@@ -152,7 +159,7 @@ export function SpbTable({
     <thead className="text-xs text-muted-foreground bg-muted/50 uppercase">
       <tr>
         <th className="px-4 py-3">Nomor SPB</th>
-        <th className="px-4 py-3">Tgl Pengajuan</th>
+        <th className="px-4 py-3">Tgl & Audit</th>
         <th className="px-4 py-3">Subjek (Pemohon)</th>
         <th className="px-4 py-3">Lingkungan</th>
         <th className="px-4 py-3">Kategori & Akun</th>

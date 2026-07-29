@@ -113,7 +113,7 @@ export async function createSpbAction(formData: FormData) {
 
     // Save SPB to Database with transaction
     await prisma.$transaction(async (tx) => {
-      const spb = await tx.spbRequest.create({
+      const spb = await tx.spbRequest.safeCreate({
         data: {
           nomorSpb,
           lingkunganId,
@@ -127,10 +127,10 @@ export async function createSpbAction(formData: FormData) {
           danaSwadaya,
           danaLingkungan,
           danaParokiRequested,
-          status: "SUBMITTED",
-          createdBy: currentUser.id
+          status: "SUBMITTED"
+          // createdBy is handled by safeCreate
         }
-      });
+      }, currentUser.id);
 
       if (googleDriveFileId && fileType) {
         await tx.spbAttachment.create({
@@ -208,27 +208,27 @@ export async function updateSpbStatusAction(
         updateData.rejectionReason = payload.rejectionReason;
       }
 
-      await tx.spbRequest.update({
+      await tx.spbRequest.safeUpdate({
         where: { id: spbId },
         data: updateData
-      });
+      }, currentUser ? currentUser.id : BigInt(0));
 
       // If realized, deduct funds from Intensi Account
       if (newStatus === "REALIZED") {
         const dana = spb.danaParokiApproved !== null ? spb.danaParokiApproved : spb.danaParokiRequested;
         
         // 1. Create Financial Mutation OUT
-        await tx.financialMutation.create({
+        await tx.financialMutation.safeCreate({
           data: {
             intensiId: spb.intensiId,
             type: "OUT",
             amount: dana,
             sourceType: "SPB_REALIZATION",
             referenceId: spb.nomorSpb,
-            description: `Pencairan dana untuk ${spb.nomorSpb} - ${spb.kategoriBantuan}`,
-            createdBy: currentUser ? currentUser.id : null
+            description: `Pencairan dana untuk ${spb.nomorSpb} - ${spb.kategoriBantuan}`
+            // createdBy is handled by safeCreate
           }
-        });
+        }, currentUser ? currentUser.id : BigInt(0));
 
         // 2. Decrement Intensi Balance
         await tx.intensiAccount.update({
@@ -293,8 +293,11 @@ export async function editSpbAction(spbId: bigint, formData: FormData) {
       fileType = file.type || "application/octet-stream";
     }
 
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { success: false, error: "Unauthorized" };
+
     await prisma.$transaction(async (tx) => {
-      await tx.spbRequest.update({
+      await tx.spbRequest.safeUpdate({
         where: { id: spbId },
         data: {
           lingkunganId,
@@ -309,7 +312,7 @@ export async function editSpbAction(spbId: bigint, formData: FormData) {
           danaLingkungan,
           danaParokiRequested,
         }
-      });
+      }, currentUser.id);
 
       if (googleDriveFileId && fileType) {
         await tx.spbAttachment.create({
@@ -343,7 +346,10 @@ export async function deleteSpbAction(spbId: bigint) {
       return { success: false, error: "Akses ditolak" };
     }
 
-    await prisma.spbRequest.delete({ where: { id: spbId } });
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { success: false, error: "Unauthorized" };
+
+    await prisma.spbRequest.softDelete({ id: spbId }, currentUser.id);
 
     revalidatePath("/dansospar/spb");
     revalidatePath("/dansospar");

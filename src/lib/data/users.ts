@@ -1,15 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-// Ensure a single Prisma instance is reused in development
-// to avoid "too many connections" errors.
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ["query"],
-  });
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { db as prisma } from "@/lib/db";
 
 export async function getUsers() {
   try {

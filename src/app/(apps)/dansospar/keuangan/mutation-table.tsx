@@ -29,9 +29,12 @@ export function MutationTable({ mutations }: { mutations: any[] }) {
             mutations.map((mut) => (
               <TableRow key={mut.id}>
                 <TableCell className="whitespace-nowrap">
-                  {new Date(mut.transactionDate).toLocaleDateString("id-ID", {
-                    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
-                  })}
+                  <div>
+                    {new Date(mut.transactionDate).toLocaleDateString("id-ID", {
+                      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+                    })}
+                  </div>
+                  {mut.creator?.name && <div className="text-xs text-muted-foreground mt-1">oleh {mut.creator.name}</div>}
                 </TableCell>
                 <TableCell className="font-medium">
                   {mut.intensiAccount.kodeAccount}

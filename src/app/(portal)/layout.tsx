@@ -9,11 +9,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "../(auth)/login/actions";
 
-export default function PortalLayout({
+import { getCurrentUser } from "@/lib/auth/permissions";
+
+export default async function PortalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+  const userName = user?.name || "Pengguna";
+  const initials = userName.substring(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Global Navbar */}
@@ -22,15 +28,16 @@ export default function PortalLayout({
           <h1 className="text-lg font-bold tracking-tight">Portal Ignatius</h1>
           <nav className="flex items-center gap-4">
             <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-full outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-primary">
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-primary">
+                <span className="hidden text-sm font-medium md:block">{userName}</span>
                 <Avatar className="h-9 w-9 border border-primary-foreground/20">
-                  <AvatarFallback className="bg-secondary text-secondary-foreground">
-                    AD
+                  <AvatarFallback className="bg-secondary text-secondary-foreground font-semibold">
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
+                <DropdownMenuLabel>Akun Saya ({userName})</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profil</DropdownMenuItem>
                 <DropdownMenuItem>Pengaturan</DropdownMenuItem>

@@ -18,16 +18,16 @@ datasource db {
 // ============================================================
 
 model Lingkungan {
-  id              Int      @id @default(autoincrement())
-  namaLingkungan  String   @map("nama_lingkungan") @db.VarChar(100)
-  wilayah         String   @db.VarChar(50)
-  createdAt       DateTime @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  namaLingkungan String   @map("nama_lingkungan") @db.VarChar(100)
+  wilayah        String   @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
-  users           User[]
-  kpsData         KpsData[]
-  umkmData        UmkmData[]
-  spbRequests     SpbRequest[]
+  users       User[]
+  kpsData     KpsData[]
+  umkmData    UmkmData[]
+  spbRequests SpbRequest[]
 
   @@map("lingkungan")
 }
@@ -50,7 +50,7 @@ model Role {
 
 model Permission {
   id          Int     @id @default(autoincrement())
-  appModule   String  @map("app_module") @db.VarChar(50)  // e.g., 'GLOBAL', 'DANSOSPAR', 'DATAUMAT'
+  appModule   String  @map("app_module") @db.VarChar(50) // e.g., 'GLOBAL', 'DANSOSPAR', 'DATAUMAT'
   name        String  @unique @db.VarChar(100)
   description String? @db.VarChar(255)
 
@@ -84,10 +84,20 @@ model User {
   createdAt        DateTime @default(now()) @map("created_at")
 
   // Relations
-  lingkungan         Lingkungan?          @relation(fields: [lingkunganId], references: [id])
+  lingkungan         Lingkungan?         @relation(fields: [lingkunganId], references: [id])
   userRoles          UserRole[]
-  spbRequests        SpbRequest[]
-  financialMutations FinancialMutation[]
+  spbRequests        SpbRequest[]        @relation("SpbCreator")
+  updatedSpbRequests SpbRequest[]        @relation("SpbUpdater")
+  deletedSpbRequests SpbRequest[]        @relation("SpbDeleter")
+  financialMutations FinancialMutation[] @relation("MutationCreator")
+  updatedMutations   FinancialMutation[] @relation("MutationUpdater")
+  deletedMutations   FinancialMutation[] @relation("MutationDeleter")
+  createdKps         KpsData[]           @relation("KpsCreator")
+  updatedKps         KpsData[]           @relation("KpsUpdater")
+  deletedKps         KpsData[]           @relation("KpsDeleter")
+  createdUmkm        UmkmData[]          @relation("UmkmCreator")
+  updatedUmkm        UmkmData[]          @relation("UmkmUpdater")
+  deletedUmkm        UmkmData[]          @relation("UmkmDeleter")
   auditLogs          AuditLog[]
   notifications      Notification[]
 
@@ -111,28 +121,36 @@ model UserRole {
 // ============================================================
 
 model KpsData {
-  id                   BigInt   @id @default(autoincrement())
-  lingkunganId         Int      @map("lingkungan_id")
-  namaKepalaKeluarga   String   @map("nama_kepala_keluarga") @db.VarChar(150)
-  nikEncrypted         String   @map("nik_encrypted") @db.VarChar(255)  // AES-256-GCM encrypted
-  kkEncrypted          String   @map("kk_encrypted") @db.VarChar(255)   // AES-256-GCM encrypted
-  alamat               String   @db.Text
-  noHp                 String?  @map("no_hp") @db.VarChar(20)
-  pekerjaan            String?  @db.VarChar(100)
-  tanggalLahir         DateTime? @map("tanggal_lahir") @db.Date
-  skorPekerjaan        Int      @default(0) @map("skor_pekerjaan")
-  skorSandang          Int      @default(0) @map("skor_sandang")
-  skorPangan           Int      @default(0) @map("skor_pangan")
-  skorPapan            Int      @default(0) @map("skor_papan")
-  skorKesehatan        Int      @default(0) @map("skor_kesehatan")
-  skorPendidikan       Int      @default(0) @map("skor_pendidikan")
-  skorSosial           Int      @default(0) @map("skor_sosial")
-  totalSkor            Int      @default(0) @map("total_skor")
-  persentaseKelayakan  Decimal  @default(0) @map("persentase_kelayakan") @db.Decimal(5, 2)
-  statusKeluarga       String   @default("Prasejahtera") @map("status_keluarga") @db.VarChar(50)
-  createdAt            DateTime @default(now()) @map("created_at")
+  id                  BigInt    @id @default(autoincrement())
+  lingkunganId        Int       @map("lingkungan_id")
+  namaKepalaKeluarga  String    @map("nama_kepala_keluarga") @db.VarChar(150)
+  nikEncrypted        String    @map("nik_encrypted") @db.VarChar(255) // AES-256-GCM encrypted
+  kkEncrypted         String    @map("kk_encrypted") @db.VarChar(255) // AES-256-GCM encrypted
+  alamat              String    @db.Text
+  noHp                String?   @map("no_hp") @db.VarChar(20)
+  pekerjaan           String?   @db.VarChar(100)
+  tanggalLahir        DateTime? @map("tanggal_lahir") @db.Date
+  skorPekerjaan       Int       @default(0) @map("skor_pekerjaan")
+  skorSandang         Int       @default(0) @map("skor_sandang")
+  skorPangan          Int       @default(0) @map("skor_pangan")
+  skorPapan           Int       @default(0) @map("skor_papan")
+  skorKesehatan       Int       @default(0) @map("skor_kesehatan")
+  skorPendidikan      Int       @default(0) @map("skor_pendidikan")
+  skorSosial          Int       @default(0) @map("skor_sosial")
+  totalSkor           Int       @default(0) @map("total_skor")
+  persentaseKelayakan Decimal   @default(0) @map("persentase_kelayakan") @db.Decimal(5, 2)
+  statusKeluarga      String    @default("Prasejahtera") @map("status_keluarga") @db.VarChar(50)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  createdBy           BigInt?   @map("created_by")
+  updatedAt           DateTime? @updatedAt @map("updated_at")
+  updatedBy           BigInt?   @map("updated_by")
+  deletedAt           DateTime? @map("deleted_at")
+  deletedBy           BigInt?   @map("deleted_by")
 
   // Relations
+  creator     User?        @relation("KpsCreator", fields: [createdBy], references: [id])
+  updater     User?        @relation("KpsUpdater", fields: [updatedBy], references: [id])
+  deleter     User?        @relation("KpsDeleter", fields: [deletedBy], references: [id])
   lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
   spbRequests SpbRequest[]
   umkmData    UmkmData[]
@@ -141,20 +159,28 @@ model KpsData {
 }
 
 model UmkmData {
-  id               BigInt   @id @default(autoincrement())
-  lingkunganId     Int      @map("lingkungan_id")
-  namaPemilik      String   @map("nama_pemilik") @db.VarChar(150)
-  namaUsaha        String   @map("nama_usaha") @db.VarChar(150)
-  jenisUsaha       String?  @map("jenis_usaha") @db.VarChar(100)
-  asetTotal        Decimal? @map("aset_total") @db.Decimal(15, 2)
-  omsetTahunan     Decimal? @map("omset_tahunan") @db.Decimal(15, 2)
-  nib              String?  @db.VarChar(50)
-  nikEncrypted     String?  @map("nik_encrypted") @db.VarChar(255)
-  kpsId            BigInt?  @map("kps_id")
-  statusKelayakan  Boolean  @default(true) @map("status_kelayakan")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id              BigInt    @id @default(autoincrement())
+  lingkunganId    Int       @map("lingkungan_id")
+  namaPemilik     String    @map("nama_pemilik") @db.VarChar(150)
+  namaUsaha       String    @map("nama_usaha") @db.VarChar(150)
+  jenisUsaha      String?   @map("jenis_usaha") @db.VarChar(100)
+  asetTotal       Decimal?  @map("aset_total") @db.Decimal(15, 2)
+  omsetTahunan    Decimal?  @map("omset_tahunan") @db.Decimal(15, 2)
+  nib             String?   @db.VarChar(50)
+  nikEncrypted    String?   @map("nik_encrypted") @db.VarChar(255)
+  kpsId           BigInt?   @map("kps_id")
+  statusKelayakan Boolean   @default(true) @map("status_kelayakan")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  createdBy       BigInt?   @map("created_by")
+  updatedAt       DateTime? @updatedAt @map("updated_at")
+  updatedBy       BigInt?   @map("updated_by")
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       BigInt?   @map("deleted_by")
 
   // Relations
+  creator     User?        @relation("UmkmCreator", fields: [createdBy], references: [id])
+  updater     User?        @relation("UmkmUpdater", fields: [updatedBy], references: [id])
+  deleter     User?        @relation("UmkmDeleter", fields: [deletedBy], references: [id])
   lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
   kpsData     KpsData?     @relation(fields: [kpsId], references: [id])
   spbRequests SpbRequest[]
@@ -181,10 +207,10 @@ enum SourceType {
 }
 
 model IntensiAccount {
-  id           Int     @id @default(autoincrement())
-  kodeAccount  String  @unique @map("kode_account") @db.VarChar(20)
-  namaIntensi  String  @map("nama_intensi") @db.VarChar(100)
-  saldo        Decimal @default(0.00) @db.Decimal(15, 2)
+  id          Int     @id @default(autoincrement())
+  kodeAccount String  @unique @map("kode_account") @db.VarChar(20)
+  namaIntensi String  @map("nama_intensi") @db.VarChar(100)
+  saldo       Decimal @default(0.00) @db.Decimal(15, 2)
 
   // Relations
   financialMutations FinancialMutation[]
@@ -194,19 +220,25 @@ model IntensiAccount {
 }
 
 model FinancialMutation {
-  id              BigInt     @id @default(autoincrement())
-  intensiId       Int        @map("intensi_id")
+  id              BigInt       @id @default(autoincrement())
+  intensiId       Int          @map("intensi_id")
   type            MutationType
-  amount          Decimal    @db.Decimal(15, 2)
-  sourceType      SourceType @map("source_type")
-  referenceId     String?    @map("reference_id") @db.VarChar(100)
-  description     String?    @db.Text
-  createdBy       BigInt?    @map("created_by")
-  transactionDate DateTime   @default(now()) @map("transaction_date")
+  amount          Decimal      @db.Decimal(15, 2)
+  sourceType      SourceType   @map("source_type")
+  referenceId     String?      @map("reference_id") @db.VarChar(100)
+  description     String?      @db.Text
+  createdBy       BigInt?      @map("created_by")
+  transactionDate DateTime     @default(now()) @map("transaction_date")
+  updatedAt       DateTime?    @updatedAt @map("updated_at")
+  updatedBy       BigInt?      @map("updated_by")
+  deletedAt       DateTime?    @map("deleted_at")
+  deletedBy       BigInt?      @map("deleted_by")
 
   // Relations
   intensiAccount IntensiAccount @relation(fields: [intensiId], references: [id])
-  creator        User?          @relation(fields: [createdBy], references: [id])
+  creator        User?          @relation("MutationCreator", fields: [createdBy], references: [id])
+  updater        User?          @relation("MutationUpdater", fields: [updatedBy], references: [id])
+  deleter        User?          @relation("MutationDeleter", fields: [deletedBy], references: [id])
 
   @@map("financial_mutations")
 }
@@ -245,13 +277,19 @@ model SpbRequest {
   rejectionReason        String?   @map("rejection_reason") @db.Text
   createdBy              BigInt    @map("created_by")
   submittedAt            DateTime  @default(now()) @map("submitted_at")
+  updatedAt              DateTime? @updatedAt @map("updated_at")
+  updatedBy              BigInt?   @map("updated_by")
+  deletedAt              DateTime? @map("deleted_at")
+  deletedBy              BigInt?   @map("deleted_by")
 
   // Relations
   lingkungan     Lingkungan      @relation(fields: [lingkunganId], references: [id])
   kpsData        KpsData?        @relation(fields: [kpsId], references: [id])
   umkmData       UmkmData?       @relation(fields: [umkmId], references: [id])
   intensiAccount IntensiAccount  @relation(fields: [intensiId], references: [id])
-  creator        User            @relation(fields: [createdBy], references: [id])
+  creator        User            @relation("SpbCreator", fields: [createdBy], references: [id])
+  updater        User?           @relation("SpbUpdater", fields: [updatedBy], references: [id])
+  deleter        User?           @relation("SpbDeleter", fields: [deletedBy], references: [id])
   attachments    SpbAttachment[]
   skDocuments    SkDocument[]
 
@@ -273,14 +311,14 @@ model SpbAttachment {
 }
 
 model SkDocument {
-  id                      BigInt   @id @default(autoincrement())
-  nomorSk                 String   @unique @map("nomor_sk") @db.VarChar(100)
-  spbId                   BigInt   @map("spb_id")
-  totalApprovedParoki     Decimal  @map("total_approved_paroki") @db.Decimal(15, 2)
-  totalApprovedKevikepan  Decimal  @default(0) @map("total_approved_kevikepan") @db.Decimal(15, 2)
-  qrHash                  String   @map("qr_hash") @db.VarChar(255)  // SHA-256 for QR verification
-  pdfGoogleDriveId        String   @map("pdf_google_drive_id") @db.VarChar(255)
-  createdAt               DateTime @default(now()) @map("created_at")
+  id                     BigInt   @id @default(autoincrement())
+  nomorSk                String   @unique @map("nomor_sk") @db.VarChar(100)
+  spbId                  BigInt   @map("spb_id")
+  totalApprovedParoki    Decimal  @map("total_approved_paroki") @db.Decimal(15, 2)
+  totalApprovedKevikepan Decimal  @default(0) @map("total_approved_kevikepan") @db.Decimal(15, 2)
+  qrHash                 String   @map("qr_hash") @db.VarChar(255) // SHA-256 for QR verification
+  pdfGoogleDriveId       String   @map("pdf_google_drive_id") @db.VarChar(255)
+  createdAt              DateTime @default(now()) @map("created_at")
 
   // Relations
   spbRequest SpbRequest @relation(fields: [spbId], references: [id])

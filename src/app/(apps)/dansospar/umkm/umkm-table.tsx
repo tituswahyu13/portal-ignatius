@@ -46,13 +46,14 @@ export function UmkmTable({
             <TableHead>Lingkungan</TableHead>
             <TableHead>Aset & Omset</TableHead>
             <TableHead>Kelayakan</TableHead>
+            <TableHead>Jejak Audit</TableHead>
             <TableHead className="text-right">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {umkmData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                 Belum ada data UMKM.
               </TableCell>
             </TableRow>
@@ -79,6 +80,19 @@ export function UmkmTable({
                   ) : (
                     <Badge variant="destructive">Melebihi Batas</Badge>
                   )}
+                </TableCell>
+                <TableCell>
+                  <div className="text-[10px] text-muted-foreground">
+                    <div>Buat: {umkm.createdAt ? new Date(umkm.createdAt).toLocaleDateString('id-ID') : "-"}</div>
+                    {umkm.creator?.name && <div className="font-medium">{umkm.creator.name}</div>}
+                    
+                    {umkm.updatedAt && (
+                      <div className="mt-1">
+                        <div>Ubah: {new Date(umkm.updatedAt).toLocaleDateString('id-ID')}</div>
+                        {umkm.updater?.name && <div className="font-medium">{umkm.updater.name}</div>}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">

@@ -41,3 +41,9 @@ prisma/*.db
 prisma/*.db-journal
 
 google-service-account.json
+
+# PWA files
+**/public/sw.js
+**/public/workbox-*.js
+**/public/fallback-*.js
+**/public/swe-worker-*.js

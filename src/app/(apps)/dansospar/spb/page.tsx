@@ -34,7 +34,9 @@ export default async function SpbManagementPage() {
       lingkungan: { select: { namaLingkungan: true } },
       intensiAccount: { select: { namaIntensi: true } },
       kpsData: { select: { namaKepalaKeluarga: true } },
-      umkmData: { select: { namaUsaha: true, namaPemilik: true } }
+      umkmData: { select: { namaUsaha: true, namaPemilik: true } },
+      creator: { select: { name: true } },
+      updater: { select: { name: true } }
     },
     orderBy: { submittedAt: 'desc' }
   });

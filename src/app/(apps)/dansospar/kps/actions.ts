@@ -3,7 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { encryptString, decryptString } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
-import { getLingkunganRestriction } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
 
 export async function createKpsAction(formData: FormData) {
   try {
@@ -61,7 +61,10 @@ export async function createKpsAction(formData: FormData) {
     const nikEncrypted = encryptString(nik);
     const kkEncrypted = encryptString(kk);
 
-    await prisma.kpsData.create({
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.kpsData.safeCreate({
       data: {
         namaKepalaKeluarga,
         nikEncrypted,
@@ -82,7 +85,7 @@ export async function createKpsAction(formData: FormData) {
         persentaseKelayakan,
         statusKeluarga
       }
-    });
+    }, user.id);
 
     revalidatePath("/dansospar/kps");
     return { success: true };
@@ -103,7 +106,9 @@ export async function getKpsData() {
     const rawData = await prisma.kpsData.findMany({
       where: whereClause,
       include: {
-        lingkungan: true
+        lingkungan: true,
+        creator: { select: { name: true } },
+        updater: { select: { name: true } }
       },
       orderBy: {
         createdAt: 'desc'
@@ -227,10 +232,13 @@ export async function updateKpsAction(id: string, formData: FormData) {
     if (nikEncryptedToSave) dataToUpdate.nikEncrypted = nikEncryptedToSave;
     if (kkEncryptedToSave) dataToUpdate.kkEncrypted = kkEncryptedToSave;
 
-    await prisma.kpsData.update({
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.kpsData.safeUpdate({
       where: { id: BigInt(id) },
       data: dataToUpdate
-    });
+    }, user.id);
 
     revalidatePath("/dansospar/kps");
     return { success: true };
@@ -250,9 +258,10 @@ export async function deleteKpsAction(id: string) {
       }
     }
 
-    await prisma.kpsData.delete({
-      where: { id: BigInt(id) }
-    });
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.kpsData.softDelete({ id: BigInt(id) }, user.id);
     revalidatePath("/dansospar/kps");
     return { success: true };
   } catch (error: any) {

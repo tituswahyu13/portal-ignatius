@@ -3,7 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { encryptString, decryptString } from "@/lib/encryption";
-import { getLingkunganRestriction } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
 
 export async function createUmkmAction(formData: FormData) {
   try {
@@ -36,7 +36,10 @@ export async function createUmkmAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
-    await prisma.umkmData.create({
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.umkmData.safeCreate({
       data: {
         namaPemilik,
         namaUsaha,
@@ -49,7 +52,7 @@ export async function createUmkmAction(formData: FormData) {
         kpsId: kpsIdBigInt,
         statusKelayakan: isLayak,
       }
-    });
+    }, user.id);
 
     revalidatePath("/dansospar/umkm");
     return { success: true };
@@ -70,7 +73,9 @@ export async function getUmkmData() {
       where: whereClause,
       include: {
         lingkungan: true,
-        kpsData: true
+        kpsData: true,
+        creator: { select: { name: true } },
+        updater: { select: { name: true } }
       },
       orderBy: {
         createdAt: 'desc'
@@ -130,7 +135,10 @@ export async function updateUmkmAction(id: string, formData: FormData) {
       }
     }
 
-    await prisma.umkmData.update({
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.umkmData.safeUpdate({
       where: { id: BigInt(id) },
       data: {
         namaPemilik,
@@ -144,7 +152,7 @@ export async function updateUmkmAction(id: string, formData: FormData) {
         kpsId: kpsIdBigInt,
         statusKelayakan: isLayak,
       }
-    });
+    }, user.id);
 
     revalidatePath("/dansospar/umkm");
     return { success: true };
@@ -164,9 +172,10 @@ export async function deleteUmkmAction(id: string) {
       }
     }
 
-    await prisma.umkmData.delete({
-      where: { id: BigInt(id) }
-    });
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    await prisma.umkmData.softDelete({ id: BigInt(id) }, user.id);
     revalidatePath("/dansospar/umkm");
     return { success: true };
   } catch (error: any) {
