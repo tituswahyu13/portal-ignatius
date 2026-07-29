@@ -4,19 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu, X } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-
-import { logout } from "../(auth)/login/actions";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
 interface PortalSidebarProps {
   userName: string;
@@ -36,7 +25,6 @@ export function PortalSidebar({
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Check if we are inside a specific module (like /dansospar)
   const isInsideModule = pathname?.startsWith("/dansospar") || pathname?.startsWith("/usermanagement");
@@ -136,40 +124,10 @@ export function PortalSidebar({
           </nav>
           
           <div className="px-4 mt-auto border-t pt-4">
-             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-secondary-foreground transition-colors outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2">
-                <Avatar className="h-8 w-8 shrink-0">
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col text-left overflow-hidden">
-                  <span className="text-sm font-medium text-foreground leading-none truncate">{userName}</span>
-                  <span className="text-xs text-muted-foreground mt-1 truncate">{roleName}</span>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)} className="cursor-pointer">Ubah Password</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <form action={logout}>
-                  <button type="submit" className="w-full text-left">
-                    <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground cursor-pointer">
-                      Keluar
-                    </DropdownMenuItem>
-                  </button>
-                </form>
-              </DropdownMenuContent>
-            </DropdownMenu>
+             <UserProfileMenu userName={userName} roleName={roleName} initials={initials} />
           </div>
         </div>
       </aside>
-
-      <ChangePasswordDialog 
-        open={isChangePasswordOpen} 
-        onOpenChange={setIsChangePasswordOpen} 
-      />
     </>
   );
 }

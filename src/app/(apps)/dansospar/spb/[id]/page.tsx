@@ -7,6 +7,7 @@ import { SpbStatusManager } from "./spb-status-manager";
 import { hasPermission } from "@/lib/auth/permissions";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { SkPdfButton } from "@/components/spb/sk-pdf-button";
 
 export const dynamic = "force-dynamic";
 
@@ -54,18 +55,39 @@ export default async function SpbDetailPage({ params }: { params: { id: string }
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" size="icon" asChild>
-          <Link href="/dansospar/spb">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Detail Pengajuan: {spb.nomorSpb}</h2>
-          <p className="text-muted-foreground">
-            Diajukan pada: {new Date(spb.submittedAt).toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' })}
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" asChild>
+            <Link href="/dansospar/spb">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Detail Pengajuan: {spb.nomorSpb}</h2>
+            <p className="text-muted-foreground">
+              Diajukan pada: {new Date(spb.submittedAt).toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
         </div>
+        
+        {(spb.status === "APPROVED_PASTOR" || spb.status === "REALIZED") && (
+          <SkPdfButton 
+            spb={{
+              id: spb.id.toString(),
+              nomorSpb: spb.nomorSpb,
+              lingkungan: spb.lingkungan,
+              intensiAccount: spb.intensiAccount,
+              kpsData: spb.kpsData ? { ...spb.kpsData, id: spb.kpsData.id.toString() } : null,
+              umkmData: spb.umkmData ? { ...spb.umkmData, id: spb.umkmData.id.toString() } : null,
+              kategoriBantuan: spb.kategoriBantuan,
+              totalBiaya: spb.totalBiaya.toString(),
+              danaSwadaya: spb.danaSwadaya.toString(),
+              danaLingkungan: spb.danaLingkungan.toString(),
+              danaParokiRequested: spb.danaParokiRequested.toString(),
+              danaParokiApproved: spb.danaParokiApproved?.toString(),
+            }} 
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

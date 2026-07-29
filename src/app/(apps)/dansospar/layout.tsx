@@ -1,8 +1,12 @@
 import { ReactNode } from "react";
 import { DanSosParSidebar } from "./dansospar-sidebar";
-import { hasPermission } from "@/lib/auth/permissions";
+import { hasPermission, getCurrentUser } from "@/lib/auth/permissions";
 
 export default async function DanSosParLayout({ children }: { children: ReactNode }) {
+  const user = await getCurrentUser();
+  const userName = user?.name || "Pengguna";
+  const roleName = user?.userRoles?.[0]?.role?.name || "User";
+  const initials = userName.substring(0, 2).toUpperCase();
   const canReadKps = await hasPermission("KPS_READ");
   const canReadUmkm = await hasPermission("UMKM_READ");
   const canReadSpb = await hasPermission("SPB_READ");
@@ -16,6 +20,9 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
         canReadUmkm={canReadUmkm}
         canReadSpb={canReadSpb}
         canReadKeuangan={canReadKeuangan}
+        userName={userName}
+        roleName={roleName}
+        initials={initials}
       />
 
       {/* Main Content */}

@@ -5,12 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
 interface DanSosParSidebarProps {
   canReadKps: boolean;
   canReadUmkm: boolean;
   canReadSpb: boolean;
   canReadKeuangan: boolean;
+  userName: string;
+  roleName: string;
+  initials: string;
 }
 
 export function DanSosParSidebar({
@@ -18,6 +22,9 @@ export function DanSosParSidebar({
   canReadUmkm,
   canReadSpb,
   canReadKeuangan,
+  userName,
+  roleName,
+  initials,
 }: DanSosParSidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -108,7 +115,9 @@ export function DanSosParSidebar({
           {canReadKeuangan && <SidebarItem href="/dansospar/laporan-keuangan" icon={<PieChart size={20} />} label="Laporan Keuangan" currentPath={pathname} />}
         </nav>
 
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t bg-background space-y-4">
+          <UserProfileMenu userName={userName} roleName={roleName} initials={initials} />
+          
           <Link 
             href="/" 
             className="flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-secondary-foreground rounded-md transition-colors"

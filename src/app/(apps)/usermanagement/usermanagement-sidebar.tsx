@@ -5,8 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Shield, ChevronLeft, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
-export function UserManagementSidebar() {
+interface UserManagementSidebarProps {
+  userName: string;
+  roleName: string;
+  initials: string;
+}
+
+export function UserManagementSidebar({ userName, roleName, initials }: UserManagementSidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -74,7 +81,9 @@ export function UserManagementSidebar() {
           {/* <SidebarItem href="/usermanagement/roles" icon={<Shield size={20} />} label="Hak Akses (RBAC)" currentPath={pathname} /> */}
         </nav>
 
-        <div className="p-4 border-t bg-background">
+        <div className="p-4 border-t bg-background space-y-4">
+          <UserProfileMenu userName={userName} roleName={roleName} initials={initials} />
+          
           <Link 
             href="/" 
             className="flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-secondary-foreground rounded-md transition-colors"
