@@ -93,6 +93,7 @@ async function main() {
     { name: "APPROVE_SPB_TPDSP", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Tim Pelayanan DanSosPar" },
     { name: "APPROVE_SPB_PASTOR", appModule: "DANSOSPAR", desc: "Setujui SPB sebagai Pastor" },
     { name: "REALIZE_SPB", appModule: "DANSOSPAR", desc: "Cairkan dana SPB (Bendahara)" },
+    { name: "SPB_RUTIN_MANAGE", appModule: "DANSOSPAR", desc: "Kelola dan buat SPB rutin bulanan massal" },
     
     // Kas & Intensi
     { name: "INTENSI_CREATE", appModule: "DANSOSPAR", desc: "Buat akun/pos intensi baru" },
@@ -103,7 +104,9 @@ async function main() {
     { name: "MUTASI_CREATE", appModule: "DANSOSPAR", desc: "Buat mutasi kas (pemasukan/pengeluaran) baru" },
     { name: "MUTASI_READ", appModule: "DANSOSPAR", desc: "Lihat data mutasi kas" },
     { name: "MUTASI_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data mutasi kas" },
-    { name: "MUTASI_DELETE", appModule: "DANSOSPAR", desc: "Hapus data mutasi kas" }
+    { name: "MUTASI_DELETE", appModule: "DANSOSPAR", desc: "Hapus data mutasi kas" },
+
+    { name: "LAPORAN_KEUANGAN_READ", appModule: "DANSOSPAR", desc: "Lihat dan cetak Laporan Keuangan" }
   ];
 
   for (const p of permissionsToCreate) {
@@ -138,10 +141,10 @@ async function main() {
     "Ketua Lingkungan": ["SPB_CREATE", "SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
     "PSE Wilayah/Lingkungan": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD"],
     "Ketua PSE": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "KPS_READ", "UMKM_READ"],
-    "Ketua Dansospar": ["APPROVE_SPB_TPDSP", "SPB_READ", "SPB_UPDATE", "SPB_DELETE", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Ketua Dansospar": ["APPROVE_SPB_TPDSP", "SPB_READ", "SPB_UPDATE", "SPB_DELETE", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ", "SPB_RUTIN_MANAGE"],
     "Sekretaris Dansospar": ["SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
-    "Bendahara Dansospar": ["REALIZE_SPB", "SPB_READ", "INTENSI_READ", "MUTASI_CREATE", "MUTASI_READ", "VIEW_DANSOSPAR_DASHBOARD"],
-    "Pastor": ["APPROVE_SPB_PASTOR", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD"]
+    "Bendahara Dansospar": ["REALIZE_SPB", "SPB_READ", "INTENSI_READ", "MUTASI_CREATE", "MUTASI_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ", "SPB_RUTIN_MANAGE"],
+    "Pastor": ["APPROVE_SPB_PASTOR", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ"]
   };
 
   // Aplikasikan pemetaan

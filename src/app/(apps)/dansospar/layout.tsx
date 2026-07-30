@@ -10,16 +10,19 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
   const canReadKps = await hasPermission("KPS_READ");
   const canReadUmkm = await hasPermission("UMKM_READ");
   const canReadSpb = await hasPermission("SPB_READ");
+  const canManageSpbRutin = await hasPermission("SPB_RUTIN_MANAGE");
   const canReadKeuangan = (await hasPermission("INTENSI_READ")) || (await hasPermission("MUTASI_READ"));
+  const canReadLaporanKeuangan = await hasPermission("LAPORAN_KEUANGAN_READ");
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
-      {/* Client-side Sidebar Component */}
       <DanSosParSidebar 
         canReadKps={canReadKps}
         canReadUmkm={canReadUmkm}
         canReadSpb={canReadSpb}
+        canManageSpbRutin={canManageSpbRutin}
         canReadKeuangan={canReadKeuangan}
+        canReadLaporanKeuangan={canReadLaporanKeuangan}
         userName={userName}
         roleName={roleName}
         initials={initials}

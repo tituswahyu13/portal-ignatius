@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
@@ -11,7 +11,9 @@ interface DanSosParSidebarProps {
   canReadKps: boolean;
   canReadUmkm: boolean;
   canReadSpb: boolean;
+  canManageSpbRutin: boolean;
   canReadKeuangan: boolean;
+  canReadLaporanKeuangan: boolean;
   userName: string;
   roleName: string;
   initials: string;
@@ -21,7 +23,9 @@ export function DanSosParSidebar({
   canReadKps,
   canReadUmkm,
   canReadSpb,
+  canManageSpbRutin,
   canReadKeuangan,
+  canReadLaporanKeuangan,
   userName,
   roleName,
   initials,
@@ -105,14 +109,15 @@ export function DanSosParSidebar({
             </div>
           )}
           {canReadSpb && <SidebarItem href="/dansospar/spb" icon={<FileText size={20} />} label="Pengajuan SPB" currentPath={pathname} />}
+          {canManageSpbRutin && <SidebarItem href="/dansospar/spb/rutin" icon={<Repeat size={20} />} label="SPB Rutin" currentPath={pathname} />}
           {canReadKeuangan && <SidebarItem href="/dansospar/keuangan" icon={<Wallet size={20} />} label="Kas & Intensi" currentPath={pathname} />}
           
-          {canReadKeuangan && (
+          {canReadLaporanKeuangan && (
             <div className="pt-4 pb-1">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Laporan</p>
             </div>
           )}
-          {canReadKeuangan && <SidebarItem href="/dansospar/laporan-keuangan" icon={<PieChart size={20} />} label="Laporan Keuangan" currentPath={pathname} />}
+          {canReadLaporanKeuangan && <SidebarItem href="/dansospar/laporan-keuangan" icon={<PieChart size={20} />} label="Laporan Keuangan" currentPath={pathname} />}
         </nav>
 
         <div className="p-4 border-t bg-background space-y-4">

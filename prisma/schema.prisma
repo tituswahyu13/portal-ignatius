@@ -92,6 +92,7 @@ model User {
   financialMutations FinancialMutation[] @relation("MutationCreator")
   updatedMutations   FinancialMutation[] @relation("MutationUpdater")
   deletedMutations   FinancialMutation[] @relation("MutationDeleter")
+  createdRecurring   RecurringSpb[]      @relation("RecurringCreator")
   createdKps         KpsData[]           @relation("KpsCreator")
   updatedKps         KpsData[]           @relation("KpsUpdater")
   deletedKps         KpsData[]           @relation("KpsDeleter")
@@ -148,12 +149,13 @@ model KpsData {
   deletedBy           BigInt?   @map("deleted_by")
 
   // Relations
-  creator     User?        @relation("KpsCreator", fields: [createdBy], references: [id])
-  updater     User?        @relation("KpsUpdater", fields: [updatedBy], references: [id])
-  deleter     User?        @relation("KpsDeleter", fields: [deletedBy], references: [id])
-  lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
-  spbRequests SpbRequest[]
-  umkmData    UmkmData[]
+  creator      User?          @relation("KpsCreator", fields: [createdBy], references: [id])
+  updater      User?          @relation("KpsUpdater", fields: [updatedBy], references: [id])
+  deleter      User?          @relation("KpsDeleter", fields: [deletedBy], references: [id])
+  lingkungan   Lingkungan     @relation(fields: [lingkunganId], references: [id])
+  spbRequests  SpbRequest[]
+  recurringSpb RecurringSpb[]
+  umkmData     UmkmData[]
 
   @@map("kps_data")
 }
@@ -215,6 +217,7 @@ model IntensiAccount {
   // Relations
   financialMutations FinancialMutation[]
   spbRequests        SpbRequest[]
+  recurringSpbs      RecurringSpb[]
 
   @@map("intensi_accounts")
 }
@@ -246,6 +249,25 @@ model FinancialMutation {
 // ============================================================
 // 5. SURAT PERMOHONAN BANTUAN (SPB) & APPROVAL
 // ============================================================
+
+model RecurringSpb {
+  id                 BigInt   @id @default(autoincrement())
+  kpsId              BigInt   @map("kps_id")
+  intensiId          Int      @map("intensi_id")
+  kategoriBantuan    String   @map("kategori_bantuan") @db.VarChar(50)
+  nominalBantuan     Decimal  @map("nominal_bantuan") @db.Decimal(15, 2)
+  isActive           Boolean  @default(true) @map("is_active")
+  lastGeneratedMonth String?  @map("last_generated_month") @db.VarChar(7) // YYYY-MM
+  createdAt          DateTime @default(now()) @map("created_at")
+  createdBy          BigInt   @map("created_by")
+
+  // Relations
+  kpsData        KpsData        @relation(fields: [kpsId], references: [id], onDelete: Cascade)
+  intensiAccount IntensiAccount @relation(fields: [intensiId], references: [id])
+  creator        User           @relation("RecurringCreator", fields: [createdBy], references: [id])
+
+  @@map("recurring_spb")
+}
 
 enum SpbStatus {
   SUBMITTED
