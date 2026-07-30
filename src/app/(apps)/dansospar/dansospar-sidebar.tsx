@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart, Repeat } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart, Repeat, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 
@@ -17,6 +17,7 @@ interface DanSosParSidebarProps {
   userName: string;
   roleName: string;
   initials: string;
+  pendingApprovalCount: number;
 }
 
 export function DanSosParSidebar({
@@ -29,6 +30,7 @@ export function DanSosParSidebar({
   userName,
   roleName,
   initials,
+  pendingApprovalCount,
 }: DanSosParSidebarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -108,7 +110,16 @@ export function DanSosParSidebar({
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Manajemen</p>
             </div>
           )}
-          {canReadSpb && <SidebarItem href="/dansospar/spb" icon={<FileText size={20} />} label="Pengajuan SPB" currentPath={pathname} />}
+          {canReadSpb && <SidebarItem href="/dansospar/spb" icon={<FileText size={20} />} label="Semua Pengajuan SPB" currentPath={pathname} />}
+          {pendingApprovalCount !== undefined && (
+            <SidebarItem 
+              href="/dansospar/spb/inbox" 
+              icon={<Inbox size={20} />} 
+              label="Persetujuan SPB" 
+              currentPath={pathname} 
+              badgeCount={pendingApprovalCount}
+            />
+          )}
           {canManageSpbRutin && <SidebarItem href="/dansospar/spb/rutin" icon={<Repeat size={20} />} label="SPB Rutin" currentPath={pathname} />}
           {canReadKeuangan && <SidebarItem href="/dansospar/keuangan" icon={<Wallet size={20} />} label="Kas & Intensi" currentPath={pathname} />}
           
@@ -136,7 +147,7 @@ export function DanSosParSidebar({
   );
 }
 
-function SidebarItem({ href, icon, label, currentPath }: { href: string; icon: ReactNode; label: string; currentPath: string }) {
+function SidebarItem({ href, icon, label, currentPath, badgeCount }: { href: string; icon: ReactNode; label: string; currentPath: string; badgeCount?: number }) {
   // Check if current path matches href exactly or is a sub-path
   const isActive = currentPath === href || currentPath.startsWith(`${href}/`);
   
@@ -151,7 +162,12 @@ function SidebarItem({ href, icon, label, currentPath }: { href: string; icon: R
       `}
     >
       {icon}
-      {label}
+      <span className="flex-1">{label}</span>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${isActive ? 'bg-primary-foreground text-primary' : 'bg-red-500 text-white'}`}>
+          {badgeCount}
+        </span>
+      )}
     </Link>
   );
 }

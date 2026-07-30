@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { DanSosParSidebar } from "./dansospar-sidebar";
-import { hasPermission, getCurrentUser } from "@/lib/auth/permissions";
+import { hasPermission, getCurrentUser, getLingkunganRestriction } from "@/lib/auth/permissions";
+import { db as prisma } from "@/lib/db";
 
 export default async function DanSosParLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
@@ -14,6 +15,32 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
   const canReadKeuangan = (await hasPermission("INTENSI_READ")) || (await hasPermission("MUTASI_READ"));
   const canReadLaporanKeuangan = await hasPermission("LAPORAN_KEUANGAN_READ");
 
+  const restriction = await getLingkunganRestriction();
+  const whereClause: any = restriction.restricted
+    ? { lingkunganId: restriction.lingkunganId }
+    : {};
+
+  const canReviewPic = await hasPermission("REVIEW_SPB_PIC");
+  const canApproveTpdsp = await hasPermission("APPROVE_SPB_TPDSP");
+  const canApprovePastor = await hasPermission("APPROVE_SPB_PASTOR");
+  const canRealize = await hasPermission("REALIZE_SPB");
+
+  const actionableStatuses: string[] = [];
+  if (canReviewPic) actionableStatuses.push("SUBMITTED");
+  if (canApproveTpdsp) actionableStatuses.push("REVIEW_PIC");
+  if (canApprovePastor) actionableStatuses.push("APPROVED_TPDSP");
+  if (canRealize) actionableStatuses.push("APPROVED_PASTOR");
+
+  let pendingApprovalCount = 0;
+  if (actionableStatuses.length > 0) {
+    pendingApprovalCount = await prisma.spbRequest.count({
+      where: {
+        ...whereClause,
+        status: { in: actionableStatuses }
+      }
+    });
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
       <DanSosParSidebar 
@@ -26,6 +53,7 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
         userName={userName}
         roleName={roleName}
         initials={initials}
+        pendingApprovalCount={pendingApprovalCount}
       />
 
       {/* Main Content */}
