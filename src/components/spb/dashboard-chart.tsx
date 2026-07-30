@@ -61,15 +61,15 @@ export function DashboardChart({ data }: DashboardChartProps) {
               <YAxis 
                 yAxisId="right" 
                 orientation="right" 
-                tickFormatter={(value: number) => formatRupiah(value)} 
+                tickFormatter={(value: any) => formatRupiah(Number(value))} 
                 tick={{ fontSize: 12 }} 
               />
               <Tooltip 
                 cursor={{ fill: '#f3f4f6' }}
                 contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                formatter={(value: number, name: string) => [
-                  formatRupiah(value), 
-                  name
+                formatter={(value: any, name: any) => [
+                  formatRupiah(Number(value)), 
+                  String(name)
                 ]}
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
