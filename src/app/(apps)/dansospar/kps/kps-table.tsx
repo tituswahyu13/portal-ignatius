@@ -8,6 +8,10 @@ import { deleteKpsAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { EditKpsDialog } from "./edit-kps-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search as SearchIcon } from "lucide-react";
 
 export function KpsTable({ 
   kpsData, 
@@ -21,6 +25,11 @@ export function KpsTable({
   canDelete?: boolean
 }) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [lingkunganId, setLingkunganId] = useState(searchParams.get("lingkunganId") || "ALL");
 
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data KPS ini?")) {
@@ -33,6 +42,14 @@ export function KpsTable({
     }
   };
 
+  const handleFilter = () => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (lingkunganId && lingkunganId !== "ALL") params.set("lingkunganId", lingkunganId);
+    
+    router.push(`/dansospar/kps?${params.toString()}`);
+  };
+
   if (kpsData.length === 0) {
     return (
       <div className="text-center p-8 border rounded-md bg-muted/20">
@@ -42,8 +59,38 @@ export function KpsTable({
   }
 
   return (
-    <div className="border rounded-md">
-      <Table>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-2 items-center">
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nama KK atau alamat..."
+            className="pl-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
+          />
+        </div>
+        <div className="w-full sm:w-[250px]">
+          <Select value={lingkunganId} onValueChange={setLingkunganId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua Lingkungan" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua Lingkungan</SelectItem>
+              {lingkungan.map((ling) => (
+                <SelectItem key={ling.id} value={ling.id.toString()}>{ling.namaLingkungan}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={handleFilter} className="w-full sm:w-auto">
+          Filter
+        </Button>
+      </div>
+
+      <div className="border rounded-md">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Lingkungan</TableHead>
@@ -167,6 +214,7 @@ export function KpsTable({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

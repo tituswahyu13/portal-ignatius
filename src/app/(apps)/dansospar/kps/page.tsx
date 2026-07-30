@@ -7,7 +7,11 @@ import { Unauthorized } from "@/components/unauthorized";
 
 export const dynamic = "force-dynamic";
 
-export default async function KpsManagementPage() {
+export default async function KpsManagementPage({
+  searchParams
+}: {
+  searchParams: { [key: string]: string | undefined }
+}) {
   const allowed = await hasPermission("KPS_READ");
   if (!allowed) {
     return <Unauthorized />;
@@ -18,7 +22,7 @@ export default async function KpsManagementPage() {
   const restriction = await getLingkunganRestriction();
 
   const lingkungan = await getLingkungan();
-  const kpsData = await getKpsData();
+  const kpsData = await getKpsData(searchParams.search, searchParams.lingkunganId);
 
   return (
     <div className="p-8">

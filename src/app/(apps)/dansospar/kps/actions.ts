@@ -22,6 +22,20 @@ export async function createKpsAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
+    // Periksa duplikasi NIK
+    const allKps = await prisma.kpsData.findMany({ select: { id: true, nikEncrypted: true } });
+    const isDuplicate = allKps.some(kps => {
+      try {
+        return decryptString(kps.nikEncrypted) === nik;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (isDuplicate) {
+      return { success: false, error: "Data KPS dengan NIK ini sudah terdaftar." };
+    }
+
     // Ambil nilai skor (0 berarti N/A atau tidak dinilai)
     const skorPekerjaan = parseInt(formData.get("skorPekerjaan") as string || "0");
     const skorSandang = parseInt(formData.get("skorSandang") as string || "0");
@@ -95,13 +109,24 @@ export async function createKpsAction(formData: FormData) {
   }
 }
 
-export async function getKpsData() {
+export async function getKpsData(searchQuery?: string, lingkunganId?: string) {
   try {
     const restriction = await getLingkunganRestriction();
     
-    const whereClause = restriction.restricted 
-      ? { lingkunganId: restriction.lingkunganId }
-      : {};
+    const whereClause: any = {};
+
+    if (restriction.restricted) {
+      whereClause.lingkunganId = restriction.lingkunganId;
+    } else if (lingkunganId && lingkunganId !== "ALL") {
+      whereClause.lingkunganId = parseInt(lingkunganId);
+    }
+
+    if (searchQuery) {
+      whereClause.OR = [
+        { namaKepalaKeluarga: { contains: searchQuery, mode: 'insensitive' } },
+        { alamat: { contains: searchQuery, mode: 'insensitive' } }
+      ];
+    }
 
     const rawData = await prisma.kpsData.findMany({
       where: whereClause,
@@ -202,6 +227,21 @@ export async function updateKpsAction(id: string, formData: FormData) {
     
     let nikEncryptedToSave: string | undefined;
     if (nik && !nik.includes("*") && nik.length === 16) {
+      // Periksa duplikasi NIK (abaikan id KPS ini sendiri)
+      const allKps = await prisma.kpsData.findMany({ select: { id: true, nikEncrypted: true } });
+      const isDuplicate = allKps.some(kps => {
+        if (kps.id.toString() === id) return false;
+        try {
+          return decryptString(kps.nikEncrypted) === nik;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      if (isDuplicate) {
+        return { success: false, error: "Data KPS dengan NIK ini sudah terdaftar pada keluarga lain." };
+      }
+
       nikEncryptedToSave = encryptString(nik);
     }
     

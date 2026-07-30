@@ -36,6 +36,19 @@ export async function createUmkmAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
+    // Periksa duplikasi UMKM
+    const existingUmkm = await prisma.umkmData.findFirst({
+      where: {
+        namaUsaha: { equals: namaUsaha, mode: 'insensitive' },
+        namaPemilik: { equals: namaPemilik, mode: 'insensitive' },
+        lingkunganId: lingkunganId
+      }
+    });
+
+    if (existingUmkm) {
+      return { success: false, error: "Data UMKM dengan nama usaha dan pemilik ini sudah terdaftar di lingkungan tersebut." };
+    }
+
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
@@ -62,12 +75,23 @@ export async function createUmkmAction(formData: FormData) {
   }
 }
 
-export async function getUmkmData() {
+export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
   try {
     const restriction = await getLingkunganRestriction();
-    const whereClause = restriction.restricted 
-      ? { lingkunganId: restriction.lingkunganId }
-      : {};
+    const whereClause: any = {};
+    
+    if (restriction.restricted) {
+      whereClause.lingkunganId = restriction.lingkunganId;
+    } else if (lingkunganId && lingkunganId !== "ALL") {
+      whereClause.lingkunganId = parseInt(lingkunganId);
+    }
+
+    if (searchQuery) {
+      whereClause.OR = [
+        { namaUsaha: { contains: searchQuery, mode: 'insensitive' } },
+        { namaPemilik: { contains: searchQuery, mode: 'insensitive' } }
+      ];
+    }
 
     const rawData = await prisma.umkmData.findMany({
       where: whereClause,
@@ -133,6 +157,20 @@ export async function updateUmkmAction(id: string, formData: FormData) {
       if (existing && existing.lingkunganId !== restriction.lingkunganId) {
         return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
       }
+    }
+
+    // Periksa duplikasi UMKM (abaikan id UMKM ini sendiri)
+    const existingUmkm = await prisma.umkmData.findFirst({
+      where: {
+        namaUsaha: { equals: namaUsaha, mode: 'insensitive' },
+        namaPemilik: { equals: namaPemilik, mode: 'insensitive' },
+        lingkunganId: lingkunganId,
+        id: { not: BigInt(id) }
+      }
+    });
+
+    if (existingUmkm) {
+      return { success: false, error: "Data UMKM dengan nama usaha dan pemilik ini sudah terdaftar di lingkungan tersebut pada entri lain." };
     }
 
     const user = await getCurrentUser();

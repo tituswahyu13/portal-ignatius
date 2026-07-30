@@ -7,6 +7,9 @@ import { getKpsForRoutineSpb } from "./actions";
 import { hasPermission } from "@/lib/auth/permissions";
 import { Unauthorized } from "@/components/unauthorized";
 import { GenerateRoutineButton } from "./generate-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuditLogTab } from "./audit-log-tab";
+import { getRoutineAuditLogs } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +37,9 @@ export default async function SpbRutinPage() {
   const ungeneratedRoutines = activeRoutines.filter(r => r.lastGeneratedMonth !== currentMonthStr);
   const canGenerate = ungeneratedRoutines.length > 0;
 
+  // 3. Get Audit Logs
+  const auditLogs = await getRoutineAuditLogs();
+
   return (
     <div className="p-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -54,55 +60,68 @@ export default async function SpbRutinPage() {
         </div>
       </div>
 
-      <div className="rounded-md border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead>Penerima Bantuan</TableHead>
-              <TableHead>Kategori</TableHead>
-              <TableHead>Nominal Bulanan</TableHead>
-              <TableHead>Sumber Dana</TableHead>
-              <TableHead>Terakhir Dibuat</TableHead>
-              <TableHead className="text-right">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {routines.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  Belum ada KPS yang terdaftar sebagai penerima bantuan rutin.
-                </TableCell>
-              </TableRow>
-            ) : (
-              routines.map((routine) => (
-                <TableRow key={routine.id.toString()}>
-                  <TableCell>
-                    <div className="font-medium">{routine.kpsData.namaKepalaKeluarga}</div>
-                    <div className="text-xs text-muted-foreground">{routine.kpsData.lingkungan.namaLingkungan}</div>
-                  </TableCell>
-                  <TableCell>{routine.kategoriBantuan}</TableCell>
-                  <TableCell className="font-medium">
-                    {formatRupiah(parseFloat(routine.nominalBantuan.toString()))}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{routine.intensiAccount.kodeAccount}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {routine.lastGeneratedMonth || "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {routine.isActive ? (
-                      <Badge className="bg-emerald-500/15 text-emerald-600">Aktif</Badge>
-                    ) : (
-                      <Badge variant="secondary">Nonaktif</Badge>
-                    )}
-                  </TableCell>
+      <Tabs defaultValue="penerima" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="penerima">Daftar Penerima</TabsTrigger>
+          <TabsTrigger value="riwayat">Riwayat Generate</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="penerima">
+          <div className="rounded-md border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Penerima Bantuan</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Nominal Bulanan</TableHead>
+                  <TableHead>Sumber Dana</TableHead>
+                  <TableHead>Terakhir Dibuat</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {routines.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      Belum ada KPS yang terdaftar sebagai penerima bantuan rutin.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  routines.map((routine) => (
+                    <TableRow key={routine.id.toString()}>
+                      <TableCell>
+                        <div className="font-medium">{routine.kpsData.namaKepalaKeluarga}</div>
+                        <div className="text-xs text-muted-foreground">{routine.kpsData.lingkungan.namaLingkungan}</div>
+                      </TableCell>
+                      <TableCell>{routine.kategoriBantuan}</TableCell>
+                      <TableCell className="font-medium">
+                        {formatRupiah(parseFloat(routine.nominalBantuan.toString()))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{routine.intensiAccount.kodeAccount}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {routine.lastGeneratedMonth || "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {routine.isActive ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-600">Aktif</Badge>
+                        ) : (
+                          <Badge variant="secondary">Nonaktif</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="riwayat">
+          <AuditLogTab logs={auditLogs} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

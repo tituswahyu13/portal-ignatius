@@ -155,6 +155,18 @@ export async function generateMonthlyRoutineSpbAction(monthStr: string) {
 
         generatedCount++;
       }
+
+      if (generatedCount > 0) {
+        await tx.auditLog.create({
+          data: {
+            userId: currentUser.id,
+            action: "GENERATE_SPB_RUTIN",
+            entity: "RecurringSpb",
+            entityId: monthStr,
+            details: `Berhasil meng-generate ${generatedCount} SPB Rutin untuk bulan ${monthStr}.`,
+          }
+        });
+      }
     });
 
     revalidatePath("/dansospar/spb/rutin");
@@ -167,5 +179,21 @@ export async function generateMonthlyRoutineSpbAction(monthStr: string) {
   } catch (error: any) {
     console.error("Gagal generate SPB massal:", error);
     return { success: false, error: "Terjadi kesalahan saat membuat SPB massal." };
+  }
+}
+
+// 5. Ambil riwayat audit log untuk SPB Rutin
+export async function getRoutineAuditLogs() {
+  try {
+    const logs = await prisma.auditLog.findMany({
+      where: { action: "GENERATE_SPB_RUTIN" },
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true } } },
+      take: 50 // Limit to 50 latest records
+    });
+    return logs;
+  } catch (error) {
+    console.error("Gagal mengambil audit log:", error);
+    return [];
   }
 }

@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Search } from "lucide-react";
+import { Download, Search, FileText, FileSpreadsheet } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 export function ReportTable({ 
   mutations, 
@@ -38,33 +41,93 @@ export function ReportTable({
     router.push(`/dansospar/laporan-keuangan?${params.toString()}`);
   };
 
-  const exportToCsv = () => {
-    // Basic CSV Export
-    const headers = ["Tanggal", "Akun Intensi", "Jenis", "Sumber", "Nominal", "Keterangan", "Dibuat Oleh"];
+  const exportToPdf = () => {
+    const doc = new jsPDF();
     
-    const rows = mutations.map(mut => [
-      new Date(mut.transactionDate).toLocaleString("id-ID").replace(/,/g, ''),
-      mut.intensiAccount.namaIntensi,
-      mut.type === "IN" ? "Pemasukan" : "Pengeluaran",
-      mut.sourceType,
-      mut.type === "IN" ? mut.amount : `-${mut.amount}`,
-      `"${mut.description?.replace(/"/g, '""') || ''}"`,
-      mut.creator?.name || "System"
-    ]);
+    // Header
+    doc.setFontSize(16);
+    doc.text("Buku Kas - Laporan Keuangan", 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString("id-ID")}`, 14, 28);
+    
+    if (startDate || endDate) {
+      doc.text(`Periode: ${startDate || "-"} s/d ${endDate || "-"}`, 14, 34);
+    }
+    
+    // Calculations for running balance (Saldo Berjalan)
+    let runningBalance = 0;
+    
+    const tableData = mutations.map(mut => {
+      const isIncome = mut.type === "IN";
+      const nominal = parseFloat(mut.amount);
+      
+      runningBalance += isIncome ? nominal : -nominal;
+      
+      return [
+        new Date(mut.transactionDate).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' }),
+        mut.intensiAccount.namaIntensi,
+        isIncome ? "Pemasukan" : "Pengeluaran",
+        mut.sourceType,
+        mut.description || "-",
+        isIncome ? formatRupiah(nominal) : "-",
+        !isIncome ? formatRupiah(nominal) : "-",
+        formatRupiah(runningBalance)
+      ];
+    });
+    
+    autoTable(doc, {
+      startY: (startDate || endDate) ? 40 : 34,
+      head: [['Tanggal', 'Akun', 'Jenis', 'Sumber', 'Keterangan', 'Pemasukan', 'Pengeluaran', 'Saldo']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185], fontSize: 9 },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+        7: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+    
+    doc.save(`buku_kas_${new Date().getTime()}.pdf`);
+  };
 
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `laporan_keuangan_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const exportToExcel = () => {
+    let runningBalance = 0;
+    
+    const excelData = mutations.map(mut => {
+      const isIncome = mut.type === "IN";
+      const nominal = parseFloat(mut.amount);
+      
+      runningBalance += isIncome ? nominal : -nominal;
+      
+      return {
+        "Tanggal": new Date(mut.transactionDate).toLocaleString("id-ID"),
+        "Akun Intensi": mut.intensiAccount.namaIntensi,
+        "Jenis": isIncome ? "Pemasukan" : "Pengeluaran",
+        "Sumber": mut.sourceType,
+        "Keterangan": mut.description || "-",
+        "Pemasukan (Rp)": isIncome ? nominal : 0,
+        "Pengeluaran (Rp)": !isIncome ? nominal : 0,
+        "Saldo (Rp)": runningBalance,
+        "Diinput Oleh": mut.creator?.name || "Sistem"
+      };
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan_Keuangan");
+    
+    // Auto-size columns slightly
+    const wscols = [
+      {wch: 20}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 35}, 
+      {wch: 15}, {wch: 15}, {wch: 15}, {wch: 20}
+    ];
+    worksheet['!cols'] = wscols;
+    
+    XLSX.writeFile(workbook, `buku_kas_${new Date().getTime()}.xlsx`);
   };
 
   return (
@@ -141,10 +204,14 @@ export function ReportTable({
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={exportToCsv} disabled={mutations.length === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          Ekspor CSV
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={exportToPdf} disabled={mutations.length === 0} className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
+          <FileText className="h-4 w-4 mr-2" />
+          PDF
+        </Button>
+        <Button variant="outline" onClick={exportToExcel} disabled={mutations.length === 0} className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700">
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Excel
         </Button>
       </div>
 

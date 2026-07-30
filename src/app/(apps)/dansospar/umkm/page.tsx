@@ -8,7 +8,11 @@ import { Unauthorized } from "@/components/unauthorized";
 
 export const dynamic = "force-dynamic";
 
-export default async function UmkmManagementPage() {
+export default async function UmkmManagementPage({
+  searchParams
+}: {
+  searchParams: { [key: string]: string | undefined }
+}) {
   const allowed = await hasPermission("UMKM_READ");
   if (!allowed) {
     return <Unauthorized />;
@@ -19,7 +23,7 @@ export default async function UmkmManagementPage() {
   const restriction = await getLingkunganRestriction();
 
   const lingkungan = await getLingkungan();
-  const umkmData = await getUmkmData();
+  const umkmData = await getUmkmData(searchParams.search, searchParams.lingkunganId);
 
   return (
     <div className="p-8">

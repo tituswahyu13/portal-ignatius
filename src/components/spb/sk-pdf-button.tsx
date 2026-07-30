@@ -6,6 +6,7 @@ import { Printer, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import QRCode from "qrcode";
+import { formatRupiah } from "@/lib/utils";
 
 interface SkPdfButtonProps {
   spb: any; // SPB Data
@@ -87,7 +88,7 @@ export function SkPdfButton({ spb, className }: SkPdfButtonProps) {
 
       // Financial Data
       const danaDisetujui = spb.danaParokiApproved !== null ? Number(spb.danaParokiApproved) : Number(spb.danaParokiRequested);
-      const formattedDana = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(danaDisetujui);
+      const formattedDana = formatRupiah(danaDisetujui);
 
       doc.setFont("helvetica", "bold");
       doc.text(`Sebesar: ${formattedDana}`, margin, cursorY);
