@@ -3,6 +3,7 @@ import { SpbTable } from "../spb-table";
 import { getLingkunganRestriction, hasPermission } from "@/lib/auth/permissions";
 import { Inbox } from "lucide-react";
 import { redirect } from "next/navigation";
+import { SpbStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +22,11 @@ export default async function SpbInboxPage() {
   const canApprovePastor = await hasPermission("APPROVE_SPB_PASTOR");
   const canRealize = await hasPermission("REALIZE_SPB");
 
-  const actionableStatuses: string[] = [];
-  if (canReviewPic) actionableStatuses.push("SUBMITTED");
-  if (canApproveTpdsp) actionableStatuses.push("REVIEW_PIC");
-  if (canApprovePastor) actionableStatuses.push("APPROVED_TPDSP");
-  if (canRealize) actionableStatuses.push("APPROVED_PASTOR");
+  const actionableStatuses: SpbStatus[] = [];
+  if (canReviewPic) actionableStatuses.push(SpbStatus.SUBMITTED);
+  if (canApproveTpdsp) actionableStatuses.push(SpbStatus.REVIEW_PIC);
+  if (canApprovePastor) actionableStatuses.push(SpbStatus.APPROVED_TPDSP);
+  if (canRealize) actionableStatuses.push(SpbStatus.APPROVED_PASTOR);
 
   if (actionableStatuses.length === 0) {
     // If the user has no approval permissions at all, redirect to SPB list

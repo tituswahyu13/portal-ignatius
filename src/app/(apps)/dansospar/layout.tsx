@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { DanSosParSidebar } from "./dansospar-sidebar";
 import { hasPermission, getCurrentUser, getLingkunganRestriction } from "@/lib/auth/permissions";
 import { db as prisma } from "@/lib/db";
+import { SpbStatus } from "@prisma/client";
 
 export default async function DanSosParLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
@@ -25,11 +26,11 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
   const canApprovePastor = await hasPermission("APPROVE_SPB_PASTOR");
   const canRealize = await hasPermission("REALIZE_SPB");
 
-  const actionableStatuses: string[] = [];
-  if (canReviewPic) actionableStatuses.push("SUBMITTED");
-  if (canApproveTpdsp) actionableStatuses.push("REVIEW_PIC");
-  if (canApprovePastor) actionableStatuses.push("APPROVED_TPDSP");
-  if (canRealize) actionableStatuses.push("APPROVED_PASTOR");
+  const actionableStatuses: SpbStatus[] = [];
+  if (canReviewPic) actionableStatuses.push(SpbStatus.SUBMITTED);
+  if (canApproveTpdsp) actionableStatuses.push(SpbStatus.REVIEW_PIC);
+  if (canApprovePastor) actionableStatuses.push(SpbStatus.APPROVED_TPDSP);
+  if (canRealize) actionableStatuses.push(SpbStatus.APPROVED_PASTOR);
 
   let pendingApprovalCount = 0;
   if (actionableStatuses.length > 0) {
