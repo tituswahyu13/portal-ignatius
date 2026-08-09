@@ -5,16 +5,55 @@ import { encryptString, decryptString } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
 
+export async function searchDataUmat(query: string, lingkunganId?: number) {
+  try {
+    const where: any = {};
+    if (lingkunganId) where.lingkunganId = lingkunganId;
+    if (query) {
+      where.nama = { contains: query, mode: 'insensitive' };
+    }
+    
+    // Hanya ambil 20 hasil teratas
+    return await prisma.dataUmat.findMany({
+      where,
+      take: 20,
+      select: {
+        id: true,
+        nama: true,
+        alamat: true,
+        tanggalLahir: true,
+        noHp: true,
+      }
+    });
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function getUmatByLingkungan(lingkunganId: number) {
+  try {
+    const data = await prisma.dataUmat.findMany({
+      where: { lingkunganId },
+      orderBy: { nama: 'asc' },
+      select: {
+        id: true,
+        nama: true,
+      }
+    });
+    return data.map(d => ({ id: d.id.toString(), nama: d.nama }));
+  } catch (error) {
+    return [];
+  }
+}
+
 export async function createKpsAction(formData: FormData) {
   try {
-    const namaKepalaKeluarga = formData.get("namaKepalaKeluarga") as string;
-    const nik = formData.get("nik") as string;
-    const kk = formData.get("kk") as string;
-    const alamat = formData.get("alamat") as string;
+    const umatId = formData.get("umatId") as string;
+    const nik = formData.get("nik") as string; // Optional (update ke DataUmat jika diisi)
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     
-    if (!namaKepalaKeluarga || !nik || !kk || !alamat || !lingkunganId) {
-      return { success: false, error: "Semua kolom wajib diisi" };
+    if (!umatId || !lingkunganId) {
+      return { success: false, error: "Pilihan Umat dan Lingkungan wajib diisi" };
     }
 
     const restriction = await getLingkunganRestriction();
@@ -22,18 +61,13 @@ export async function createKpsAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
-    // Periksa duplikasi NIK
-    const allKps = await prisma.kpsData.findMany({ select: { id: true, nikEncrypted: true } });
-    const isDuplicate = allKps.some(kps => {
-      try {
-        return decryptString(kps.nikEncrypted) === nik;
-      } catch (e) {
-        return false;
-      }
+    // Periksa duplikasi KPS
+    const existingKps = await prisma.kpsData.findUnique({
+      where: { umatId: BigInt(umatId) }
     });
 
-    if (isDuplicate) {
-      return { success: false, error: "Data KPS dengan NIK ini sudah terdaftar." };
+    if (existingKps) {
+      return { success: false, error: "Umat ini sudah terdaftar sebagai KPS." };
     }
 
     // Ambil nilai skor (0 berarti N/A atau tidak dinilai)
@@ -65,28 +99,21 @@ export async function createKpsAction(formData: FormData) {
     // Tentukan status KPS
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";
 
-    // New optional fields
-    const noHp = formData.get("noHp") as string;
-    const pekerjaan = formData.get("pekerjaan") as string;
-    const tanggalLahirStr = formData.get("tanggalLahir") as string;
-    const tanggalLahir = tanggalLahirStr ? new Date(tanggalLahirStr) : null;
-
-    // Encrypt sensitive data
-    const nikEncrypted = encryptString(nik);
-    const kkEncrypted = encryptString(kk);
+    // Jika ada input NIK baru, perbarui data umatnya
+    if (nik && nik.length === 16) {
+      const nikEncrypted = encryptString(nik);
+      await prisma.dataUmat.update({
+        where: { id: BigInt(umatId) },
+        data: { nikEncrypted }
+      });
+    }
 
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
     await prisma.kpsData.safeCreate({
       data: {
-        namaKepalaKeluarga,
-        nikEncrypted,
-        kkEncrypted,
-        alamat,
-        noHp: noHp || null,
-        pekerjaan: pekerjaan || null,
-        tanggalLahir,
+        umatId: BigInt(umatId),
         lingkunganId,
         skorPekerjaan,
         skorSandang,
@@ -122,15 +149,18 @@ export async function getKpsData(searchQuery?: string, lingkunganId?: string) {
     }
 
     if (searchQuery) {
-      whereClause.OR = [
-        { namaKepalaKeluarga: { contains: searchQuery, mode: 'insensitive' } },
-        { alamat: { contains: searchQuery, mode: 'insensitive' } }
-      ];
+      whereClause.umat = {
+        OR: [
+          { nama: { contains: searchQuery, mode: 'insensitive' } },
+          { alamat: { contains: searchQuery, mode: 'insensitive' } }
+        ]
+      };
     }
 
     const rawData = await prisma.kpsData.findMany({
       where: whereClause,
       include: {
+        umat: true,
         lingkungan: true,
         creator: { select: { name: true } },
         updater: { select: { name: true } }
@@ -146,20 +176,36 @@ export async function getKpsData(searchQuery?: string, lingkunganId?: string) {
       let kk = "";
       
       try {
-        nik = decryptString(kps.nikEncrypted);
-        // Masking sebagian digit demi privasi tambahan di UI
-        nik = nik.substring(0, 6) + "******" + nik.substring(12);
+        if (kps.umat?.nikEncrypted) {
+          nik = decryptString(kps.umat.nikEncrypted);
+          // Masking sebagian digit demi privasi tambahan di UI
+          nik = nik.substring(0, 6) + "******" + nik.substring(12);
+        } else {
+          nik = "-";
+        }
       } catch (e) { nik = "Error"; }
       
       try {
-        kk = decryptString(kps.kkEncrypted);
-        kk = kk.substring(0, 6) + "******" + kk.substring(12);
+        if (kps.umat?.kkEncrypted) {
+          kk = decryptString(kps.umat.kkEncrypted);
+          kk = kk.substring(0, 6) + "******" + kk.substring(12);
+        } else {
+          kk = "-";
+        }
       } catch (e) { kk = "Error"; }
 
       return {
         ...kps,
-        id: kps.id.toString(), // Convert BigInt
-        persentaseKelayakan: kps.persentaseKelayakan ? kps.persentaseKelayakan.toString() : "0", // Convert Decimal
+        id: kps.id ? kps.id.toString() : "",
+        umatId: kps.umatId ? kps.umatId.toString() : "",
+        createdBy: kps.createdBy ? kps.createdBy.toString() : null,
+        updatedBy: kps.updatedBy ? kps.updatedBy.toString() : null,
+        deletedBy: kps.deletedBy ? kps.deletedBy.toString() : null,
+        umat: kps.umat ? {
+          ...kps.umat,
+          id: kps.umat.id ? kps.umat.id.toString() : ""
+        } : null,
+        persentaseKelayakan: kps.persentaseKelayakan ? kps.persentaseKelayakan.toString() : "0",
         nikDecryptedMasked: nik,
         kkDecryptedMasked: kk
       };
@@ -172,11 +218,10 @@ export async function getKpsData(searchQuery?: string, lingkunganId?: string) {
 
 export async function updateKpsAction(id: string, formData: FormData) {
   try {
-    const namaKepalaKeluarga = formData.get("namaKepalaKeluarga") as string;
-    const alamat = formData.get("alamat") as string;
+    const umatId = formData.get("umatId") as string;
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     
-    if (!namaKepalaKeluarga || !alamat || !lingkunganId) {
+    if (!umatId || !lingkunganId) {
       return { success: false, error: "Kolom wajib harus diisi" };
     }
 
@@ -215,47 +260,18 @@ export async function updateKpsAction(id: string, formData: FormData) {
 
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";
 
-    // New optional fields
-    const noHp = formData.get("noHp") as string;
-    const pekerjaan = formData.get("pekerjaan") as string;
-    const tanggalLahirStr = formData.get("tanggalLahir") as string;
-    const tanggalLahir = tanggalLahirStr ? new Date(tanggalLahirStr) : null;
-    
-    // NIK & KK (Only update if they exist and are not masked with '*')
+    // NIK (Only update if they exist and are not masked with '*')
     const nik = formData.get("nik") as string;
-    const kk = formData.get("kk") as string;
     
-    let nikEncryptedToSave: string | undefined;
     if (nik && !nik.includes("*") && nik.length === 16) {
-      // Periksa duplikasi NIK (abaikan id KPS ini sendiri)
-      const allKps = await prisma.kpsData.findMany({ select: { id: true, nikEncrypted: true } });
-      const isDuplicate = allKps.some(kps => {
-        if (kps.id.toString() === id) return false;
-        try {
-          return decryptString(kps.nikEncrypted) === nik;
-        } catch (e) {
-          return false;
-        }
+      const nikEncrypted = encryptString(nik);
+      await prisma.dataUmat.update({
+        where: { id: BigInt(umatId) },
+        data: { nikEncrypted }
       });
-
-      if (isDuplicate) {
-        return { success: false, error: "Data KPS dengan NIK ini sudah terdaftar pada keluarga lain." };
-      }
-
-      nikEncryptedToSave = encryptString(nik);
-    }
-    
-    let kkEncryptedToSave: string | undefined;
-    if (kk && !kk.includes("*") && kk.length === 16) {
-      kkEncryptedToSave = encryptString(kk);
     }
 
     const dataToUpdate: any = {
-      namaKepalaKeluarga,
-      alamat,
-      noHp: noHp || null,
-      pekerjaan: pekerjaan || null,
-      tanggalLahir,
       lingkunganId,
       skorPekerjaan,
       skorSandang,
@@ -268,12 +284,12 @@ export async function updateKpsAction(id: string, formData: FormData) {
       persentaseKelayakan,
       statusKeluarga
     };
-    
-    if (nikEncryptedToSave) dataToUpdate.nikEncrypted = nikEncryptedToSave;
-    if (kkEncryptedToSave) dataToUpdate.kkEncrypted = kkEncryptedToSave;
 
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
+
+    // Update umat linked just in case it changed
+    dataToUpdate.umatId = BigInt(umatId);
 
     await prisma.kpsData.safeUpdate({
       where: { id: BigInt(id) },

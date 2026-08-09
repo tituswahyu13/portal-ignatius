@@ -25,6 +25,7 @@ model Lingkungan {
 
   // Relations
   users       User[]
+  dataUmat    DataUmat[]
   kpsData     KpsData[]
   umkmData    UmkmData[]
   spbRequests SpbRequest[]
@@ -121,16 +122,43 @@ model UserRole {
 // 3. DATA SUBJEK (KPS & UMKM)
 // ============================================================
 
+model DataUmat {
+  id              BigInt    @id @default(autoincrement())
+  nama            String    @db.VarChar(150)
+  namaBaptis      String?   @map("nama_baptis") @db.VarChar(100)
+  jenisKelamin    String?   @map("jenis_kelamin") @db.VarChar(1)
+  kkEncrypted     String?   @map("kk_encrypted") @db.VarChar(255)
+  nikEncrypted    String?   @map("nik_encrypted") @db.VarChar(255)
+  noHp            String?   @map("no_hp") @db.VarChar(20)
+  tanggalLahir    DateTime? @map("tanggal_lahir") @db.Date
+  lingkunganId    Int?      @map("lingkungan_id")
+  alamat          String?   @db.Text
+  agama           String?   @db.VarChar(50)
+  statusNikah     String?   @map("status_nikah") @db.VarChar(50)
+  pendidikan      String?   @db.VarChar(50)
+  pekerjaan       String?   @db.VarChar(100)
+  profesi         String?   @db.VarChar(100)
+  kondisiTubuh    String?   @map("kondisi_tubuh") @db.VarChar(50)
+  statusRumah     String?   @map("status_rumah") @db.VarChar(50)
+  suku            String?   @db.VarChar(50)
+  statusAktivitas String?   @map("status_aktivitas") @db.VarChar(50)
+  kota            String?   @db.VarChar(50)
+  kecamatan       String?   @db.VarChar(50)
+  kelurahan       String?   @db.VarChar(50)
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  lingkungan      Lingkungan? @relation(fields: [lingkunganId], references: [id])
+  kpsData         KpsData?
+  umkmData        UmkmData[]
+
+  @@map("data_umat")
+}
+
 model KpsData {
   id                  BigInt    @id @default(autoincrement())
+  umatId              BigInt    @unique @map("umat_id")
   lingkunganId        Int       @map("lingkungan_id")
-  namaKepalaKeluarga  String    @map("nama_kepala_keluarga") @db.VarChar(150)
-  nikEncrypted        String    @map("nik_encrypted") @db.VarChar(255) // AES-256-GCM encrypted
-  kkEncrypted         String    @map("kk_encrypted") @db.VarChar(255) // AES-256-GCM encrypted
-  alamat              String    @db.Text
-  noHp                String?   @map("no_hp") @db.VarChar(20)
-  pekerjaan           String?   @db.VarChar(100)
-  tanggalLahir        DateTime? @map("tanggal_lahir") @db.Date
   skorPekerjaan       Int       @default(0) @map("skor_pekerjaan")
   skorSandang         Int       @default(0) @map("skor_sandang")
   skorPangan          Int       @default(0) @map("skor_pangan")
@@ -153,6 +181,7 @@ model KpsData {
   updater      User?          @relation("KpsUpdater", fields: [updatedBy], references: [id])
   deleter      User?          @relation("KpsDeleter", fields: [deletedBy], references: [id])
   lingkungan   Lingkungan     @relation(fields: [lingkunganId], references: [id])
+  umat         DataUmat       @relation(fields: [umatId], references: [id])
   spbRequests  SpbRequest[]
   recurringSpb RecurringSpb[]
   umkmData     UmkmData[]
@@ -162,8 +191,8 @@ model KpsData {
 
 model UmkmData {
   id              BigInt    @id @default(autoincrement())
+  umatId          BigInt    @map("umat_id")
   lingkunganId    Int       @map("lingkungan_id")
-  namaPemilik     String    @map("nama_pemilik") @db.VarChar(150)
   namaUsaha       String    @map("nama_usaha") @db.VarChar(150)
   jenisUsaha      String?   @map("jenis_usaha") @db.VarChar(100)
   asetTotal       Decimal?  @map("aset_total") @db.Decimal(15, 2)
@@ -184,6 +213,7 @@ model UmkmData {
   updater     User?        @relation("UmkmUpdater", fields: [updatedBy], references: [id])
   deleter     User?        @relation("UmkmDeleter", fields: [deletedBy], references: [id])
   lingkungan  Lingkungan   @relation(fields: [lingkunganId], references: [id])
+  umat        DataUmat     @relation(fields: [umatId], references: [id])
   kpsData     KpsData?     @relation(fields: [kpsId], references: [id])
   spbRequests SpbRequest[]
 

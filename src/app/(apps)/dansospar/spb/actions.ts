@@ -30,15 +30,17 @@ export async function getSubjekByLingkungan(lingkunganId: number, type: "KPS" | 
   if (type === "KPS") {
     const kps = await prisma.kpsData.findMany({
       where: { lingkunganId },
-      orderBy: { namaKepalaKeluarga: 'asc' }
+      include: { umat: true },
+      orderBy: { umat: { nama: 'asc' } }
     });
-    return kps.map(k => ({ ...k, id: k.id.toString() }));
+    return kps.map(k => ({ ...k, id: k.id.toString(), namaKepalaKeluarga: k.umat?.nama || "Tidak diketahui" }));
   } else {
     const umkm = await prisma.umkmData.findMany({
       where: { lingkunganId },
-      orderBy: { namaPemilik: 'asc' }
+      include: { umat: true },
+      orderBy: { umat: { nama: 'asc' } }
     });
-    return umkm.map(u => ({ ...u, id: u.id.toString() }));
+    return umkm.map(u => ({ ...u, id: u.id.toString(), namaPemilik: u.umat?.nama || "Tidak diketahui" }));
   }
 }
 

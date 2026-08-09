@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createUmkmAction, getKpsByLingkungan } from "./actions";
+import { getUmatByLingkungan } from "../kps/actions";
 
 export function CreateUmkmDialog({ 
   lingkungan,
@@ -22,6 +23,10 @@ export function CreateUmkmDialog({
   const [selectedLingkungan, setSelectedLingkungan] = useState<string>("");
   const [kpsList, setKpsList] = useState<any[]>([]);
   const [isKps, setIsKps] = useState(false);
+  const [umatList, setUmatList] = useState<{id: string, nama: string}[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUmatId, setSelectedUmatId] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Initialize selected lingkungan if restricted
   useEffect(() => {
@@ -30,20 +35,27 @@ export function CreateUmkmDialog({
     }
   }, [restriction]);
 
-  // Load KPS when lingkungan changes
+  // Load KPS and Umat when lingkungan changes
   useEffect(() => {
     if (!selectedLingkungan) {
       setKpsList([]);
+      setUmatList([]);
       return;
     }
 
-    const fetchKps = async () => {
-      const data = await getKpsByLingkungan(parseInt(selectedLingkungan));
-      setKpsList(data);
+    const fetchDeps = async () => {
+      const kpsData = await getKpsByLingkungan(parseInt(selectedLingkungan));
+      setKpsList(kpsData);
+      const umatData = await getUmatByLingkungan(parseInt(selectedLingkungan));
+      setUmatList(umatData);
     };
     
-    fetchKps();
+    fetchDeps();
+    setSelectedUmatId("");
+    setSearchQuery("");
   }, [selectedLingkungan]);
+
+  const filteredUmat = umatList.filter(u => u.nama.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,10 +63,19 @@ export function CreateUmkmDialog({
     setError("");
 
     const formData = new FormData(e.currentTarget);
+    if (!selectedUmatId) {
+      setError("Silakan pilih Pemilik (Data Umat) dari daftar.");
+      setLoading(false);
+      return;
+    }
+    formData.append("umatId", selectedUmatId);
+
     const result = await createUmkmAction(formData);
 
     if (result.success) {
       setOpen(false);
+      setSelectedUmatId("");
+      setSearchQuery("");
     } else {
       setError(result.error || "Gagal menyimpan data");
     }
@@ -74,12 +95,55 @@ export function CreateUmkmDialog({
         {error && <div className="p-3 text-sm bg-red-500/10 text-red-500 rounded-md">{error}</div>}
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label>Nama Pemilik</Label>
-            <Input name="namaPemilik" required placeholder="Sesuai KTP" />
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 relative">
+              <Label>Nama Pemilik (Data Umat) <span className="text-red-500">*</span></Label>
+              <div 
+                className="relative"
+                onBlur={(e) => {
+                  setTimeout(() => setShowDropdown(false), 200);
+                }}
+              >
+                <Input 
+                  placeholder={selectedLingkungan ? "Ketik nama untuk mencari..." : "Pilih lingkungan dahulu"} 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSelectedUmatId(""); 
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (selectedLingkungan) setShowDropdown(true);
+                  }}
+                  disabled={!selectedLingkungan}
+                  required={!selectedUmatId}
+                />
+                
+                {showDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-md max-h-60 overflow-y-auto">
+                    {filteredUmat.length > 0 ? (
+                      filteredUmat.map(u => (
+                        <div 
+                          key={u.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                          onClick={() => {
+                            setSelectedUmatId(u.id);
+                            setSearchQuery(u.nama);
+                            setShowDropdown(false);
+                          }}
+                        >
+                          {u.nama}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                        Tidak ada umat ditemukan.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Pilih Lingkungan</Label>
               <Select 
@@ -139,13 +203,7 @@ export function CreateUmkmDialog({
                 </Select>
                 <p className="text-xs text-muted-foreground">Pilih Kepala Keluarga jika UMKM ini terikat dengan data KPS.</p>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <Label>Nomor Induk Kependudukan (NIK)</Label>
-                <Input name="nik" placeholder="Masukkan 16 digit NIK" maxLength={16} />
-                <p className="text-xs text-muted-foreground">NIK akan dienkripsi dan disimpan dengan aman.</p>
-              </div>
-            )}
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

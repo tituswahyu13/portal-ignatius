@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createKpsAction } from "./actions";
+import { createKpsAction, getUmatByLingkungan } from "./actions";
 
 const INDICATORS = [
   { 
@@ -71,16 +72,47 @@ export function CreateKpsDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [selectedLingkungan, setSelectedLingkungan] = useState<string>(
+    restriction?.restricted ? restriction.lingkunganId.toString() : ""
+  );
+  const [umatList, setUmatList] = useState<{id: string, nama: string}[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUmatId, setSelectedUmatId] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (selectedLingkungan) {
+      getUmatByLingkungan(parseInt(selectedLingkungan)).then(setUmatList);
+    } else {
+      setUmatList([]);
+    }
+    // Reset selection when lingkungan changes
+    setSelectedUmatId("");
+    setSearchQuery("");
+  }, [selectedLingkungan]);
+
+  const filteredUmat = umatList.filter(u => u.nama.toLowerCase().includes(searchQuery.toLowerCase()));
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const formData = new FormData(e.currentTarget);
+    
+    if (!selectedUmatId) {
+      setError("Silakan pilih Data Umat dari daftar.");
+      setLoading(false);
+      return;
+    }
+    formData.append("umatId", selectedUmatId);
+
     const result = await createKpsAction(formData);
 
     if (result.success) {
       setOpen(false);
+      setSelectedUmatId("");
+      setSearchQuery("");
     } else {
       setError(result.error || "Gagal menyimpan data");
     }
@@ -101,15 +133,12 @@ export function CreateKpsDialog({
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nama Kepala Keluarga</Label>
-              <Input name="namaKepalaKeluarga" required placeholder="Sesuai KTP" />
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="lingkunganId">Lingkungan <span className="text-red-500">*</span></Label>
               <Select 
                 name="lingkunganId" 
-                defaultValue={restriction?.restricted ? restriction.lingkunganId.toString() : ""}
+                value={selectedLingkungan}
+                onValueChange={setSelectedLingkungan}
                 disabled={restriction?.restricted}
                 required
               >
@@ -126,39 +155,66 @@ export function CreateKpsDialog({
                 <input type="hidden" name="lingkunganId" value={restriction.lingkunganId.toString()} />
               )}
             </div>
+            
+            <div className="space-y-2 relative">
+              <Label>Nama Kepala Keluarga (Data Umat) <span className="text-red-500">*</span></Label>
+              <div 
+                className="relative"
+                onBlur={(e) => {
+                  // timeout to allow click on dropdown items
+                  setTimeout(() => setShowDropdown(false), 200);
+                }}
+              >
+                <Input 
+                  placeholder={selectedLingkungan ? "Ketik nama untuk mencari..." : "Pilih lingkungan dahulu"} 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSelectedUmatId(""); // reset if they type
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (selectedLingkungan) setShowDropdown(true);
+                  }}
+                  disabled={!selectedLingkungan}
+                  required={!selectedUmatId}
+                />
+                
+                {showDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-md max-h-60 overflow-y-auto">
+                    {filteredUmat.length > 0 ? (
+                      filteredUmat.map(u => (
+                        <div 
+                          key={u.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                          onClick={() => {
+                            setSelectedUmatId(u.id);
+                            setSearchQuery(u.nama);
+                            setShowDropdown(false);
+                          }}
+                        >
+                          {u.nama}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                        Tidak ada umat ditemukan.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Pilih umat yang sudah terdaftar di Master Data Umat.</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>NIK (Nomor Induk Kependudukan)</Label>
-              <Input name="nik" required placeholder="16 Digit NIK" maxLength={16} />
+              <Label>NIK (Opsional - Perbarui Data)</Label>
+              <Input name="nik" placeholder="Isi untuk memperbarui NIK di Data Umat" maxLength={16} />
               <p className="text-xs text-muted-foreground">NIK akan dienkripsi (AES-256).</p>
             </div>
             <div className="space-y-2">
-              <Label>Nomor Kartu Keluarga (KK)</Label>
-              <Input name="kk" required placeholder="16 Digit No. KK" maxLength={16} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nomor HP/WA (Opsional)</Label>
-              <Input name="noHp" placeholder="0812xxxxxx" />
-            </div>
-            <div className="space-y-2">
-              <Label>Pekerjaan Utama</Label>
-              <Input name="pekerjaan" placeholder="Contoh: Buruh Harian" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tanggal Lahir</Label>
-              <Input name="tanggalLahir" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label>Alamat Lengkap</Label>
-              <Input name="alamat" required placeholder="Alamat domisili saat ini" />
             </div>
           </div>
 

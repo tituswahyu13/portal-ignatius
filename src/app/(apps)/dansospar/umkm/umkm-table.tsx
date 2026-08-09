@@ -109,11 +109,9 @@ export function UmkmTable({
               <TableRow key={umkm.id}>
                 <TableCell>
                   <div className="font-medium">{umkm.namaUsaha}</div>
-                  <div className="text-xs text-muted-foreground">Oleh: {umkm.namaPemilik}</div>
+                  <div className="text-xs text-muted-foreground">Oleh: {umkm.umat?.nama || "Tidak diketahui"}</div>
                   {umkm.kpsData ? (
                     <div className="text-xs text-blue-600 font-medium mt-1">✓ KPS Terhubung</div>
-                  ) : umkm.nik ? (
-                    <div className="text-xs text-muted-foreground mt-1">NIK: {umkm.nik.substring(0, 6)}**********</div>
                   ) : null}
                 </TableCell>
                 <TableCell>{umkm.lingkungan?.namaLingkungan}</TableCell>

@@ -41,8 +41,8 @@ export default async function SpbInboxPage() {
     include: {
       lingkungan: { select: { namaLingkungan: true } },
       intensiAccount: { select: { namaIntensi: true } },
-      kpsData: { select: { namaKepalaKeluarga: true } },
-      umkmData: { select: { namaUsaha: true, namaPemilik: true } },
+      kpsData: { include: { umat: true } },
+      umkmData: { include: { umat: true } },
       creator: { select: { name: true } },
       updater: { select: { name: true } }
     },

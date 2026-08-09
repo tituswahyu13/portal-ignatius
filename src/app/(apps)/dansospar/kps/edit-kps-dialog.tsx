@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { updateKpsAction } from "./actions";
+import { updateKpsAction, getUmatByLingkungan } from "./actions";
 import { Edit2 } from "lucide-react";
 
 const INDICATORS = [
@@ -24,12 +24,47 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [selectedLingkungan, setSelectedLingkungan] = useState<string>(
+    kps.lingkunganId?.toString() || ""
+  );
+  const [umatList, setUmatList] = useState<{id: string, nama: string}[]>([]);
+  const [searchQuery, setSearchQuery] = useState(kps.umat?.nama || "");
+  const [selectedUmatId, setSelectedUmatId] = useState(kps.umatId?.toString() || "");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    if (selectedLingkungan) {
+      getUmatByLingkungan(parseInt(selectedLingkungan)).then(setUmatList);
+    } else {
+      setUmatList([]);
+    }
+  }, [selectedLingkungan]);
+
+  // Update selected umat when modal opens or kps changes
+  useEffect(() => {
+    if (open && kps) {
+      setSelectedLingkungan(kps.lingkunganId?.toString() || "");
+      setSelectedUmatId(kps.umatId?.toString() || "");
+      setSearchQuery(kps.umat?.nama || "");
+    }
+  }, [open, kps]);
+
+  const filteredUmat = umatList.filter(u => u.nama.toLowerCase().includes(searchQuery.toLowerCase()));
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const formData = new FormData(e.currentTarget);
+    
+    if (!selectedUmatId) {
+      setError("Silakan pilih Data Umat dari daftar.");
+      setLoading(false);
+      return;
+    }
+    formData.append("umatId", selectedUmatId);
+
     const result = await updateKpsAction(kps.id, formData);
 
     if (result.success) {
@@ -57,12 +92,17 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Nama Kepala Keluarga</Label>
-              <Input name="namaKepalaKeluarga" required defaultValue={kps.namaKepalaKeluarga} />
-            </div>
-            <div className="space-y-2">
               <Label>Lingkungan</Label>
-              <Select name="lingkunganId" required defaultValue={kps.lingkunganId?.toString()}>
+              <Select 
+                name="lingkunganId" 
+                required 
+                value={selectedLingkungan}
+                onValueChange={(val) => {
+                  setSelectedLingkungan(val);
+                  setSelectedUmatId(""); // reset if lingkungan changed
+                  setSearchQuery("");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih Lingkungan" />
                 </SelectTrigger>
@@ -73,6 +113,55 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-2 relative">
+              <Label>Nama Kepala Keluarga (Data Umat) <span className="text-red-500">*</span></Label>
+              <div 
+                className="relative"
+                onBlur={(e) => {
+                  setTimeout(() => setShowDropdown(false), 200);
+                }}
+              >
+                <Input 
+                  placeholder={selectedLingkungan ? "Ketik nama untuk mencari..." : "Pilih lingkungan dahulu"} 
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSelectedUmatId(""); 
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => {
+                    if (selectedLingkungan) setShowDropdown(true);
+                  }}
+                  disabled={!selectedLingkungan}
+                  required={!selectedUmatId}
+                />
+                
+                {showDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-md max-h-60 overflow-y-auto">
+                    {filteredUmat.length > 0 ? (
+                      filteredUmat.map(u => (
+                        <div 
+                          key={u.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                          onClick={() => {
+                            setSelectedUmatId(u.id);
+                            setSearchQuery(u.nama);
+                            setShowDropdown(false);
+                          }}
+                        >
+                          {u.nama}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                        Tidak ada umat ditemukan.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -80,37 +169,6 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
               <Label>NIK (Biarkan jika tidak diubah)</Label>
               <Input name="nik" placeholder="Masukkan 16 digit NIK baru" defaultValue={kps.nikDecryptedMasked || ""} />
               <p className="text-xs text-muted-foreground">Ketik ulang 16 digit jika ingin mengubah NIK.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>No. KK (Biarkan jika tidak diubah)</Label>
-              <Input name="kk" placeholder="Masukkan 16 digit KK baru" defaultValue={kps.kkDecryptedMasked || ""} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nomor HP/WA (Opsional)</Label>
-              <Input name="noHp" placeholder="0812xxxxxx" defaultValue={kps.noHp || ""} />
-            </div>
-            <div className="space-y-2">
-              <Label>Pekerjaan Utama</Label>
-              <Input name="pekerjaan" placeholder="Contoh: Buruh Harian" defaultValue={kps.pekerjaan || ""} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tanggal Lahir</Label>
-              {/* Note: Ensure kps.tanggalLahir is parsed correctly if it exists (e.g. YYYY-MM-DD format) */}
-              <Input 
-                name="tanggalLahir" 
-                type="date" 
-                defaultValue={kps.tanggalLahir ? new Date(kps.tanggalLahir).toISOString().split('T')[0] : ""} 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Alamat Lengkap</Label>
-              <Input name="alamat" required defaultValue={kps.alamat} />
             </div>
           </div>
 

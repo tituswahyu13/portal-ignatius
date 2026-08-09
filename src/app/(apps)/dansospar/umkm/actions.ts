@@ -7,7 +7,7 @@ import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions
 
 export async function createUmkmAction(formData: FormData) {
   try {
-    const namaPemilik = formData.get("namaPemilik") as string;
+    const umatId = formData.get("umatId") as string;
     const namaUsaha = formData.get("namaUsaha") as string;
     const jenisUsaha = formData.get("jenisUsaha") as string;
     const asetTotalStr = formData.get("asetTotal") as string;
@@ -18,17 +18,15 @@ export async function createUmkmAction(formData: FormData) {
     
     const nib = formData.get("nib") as string;
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
-    const nik = formData.get("nik") as string;
     const kpsId = formData.get("kpsId") as string;
     
-    const nikEncrypted = nik ? encryptString(nik) : null;
     const kpsIdBigInt = kpsId ? BigInt(kpsId) : null;
     
     // Status kelayakan otomatis (Aset <= 20jt, Omset <= 100jt). Jika kosong, dianggap memenuhi syarat.
     const isLayak = (asetTotal === null || asetTotal <= 20000000) && (omsetTahunan === null || omsetTahunan <= 100000000);
 
-    if (!namaPemilik || !namaUsaha || !lingkunganId) {
-      return { success: false, error: "Nama pemilik, usaha, dan lingkungan wajib diisi" };
+    if (!umatId || !namaUsaha || !lingkunganId) {
+      return { success: false, error: "Nama umat, usaha, dan lingkungan wajib diisi" };
     }
 
     const restriction = await getLingkunganRestriction();
@@ -40,7 +38,7 @@ export async function createUmkmAction(formData: FormData) {
     const existingUmkm = await prisma.umkmData.findFirst({
       where: {
         namaUsaha: { equals: namaUsaha, mode: 'insensitive' },
-        namaPemilik: { equals: namaPemilik, mode: 'insensitive' },
+        umatId: BigInt(umatId),
         lingkunganId: lingkunganId
       }
     });
@@ -54,14 +52,13 @@ export async function createUmkmAction(formData: FormData) {
 
     await prisma.umkmData.safeCreate({
       data: {
-        namaPemilik,
+        umatId: BigInt(umatId),
         namaUsaha,
         jenisUsaha,
         asetTotal,
         omsetTahunan,
         nib,
         lingkunganId,
-        nikEncrypted,
         kpsId: kpsIdBigInt,
         statusKelayakan: isLayak,
       }
@@ -89,13 +86,14 @@ export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
     if (searchQuery) {
       whereClause.OR = [
         { namaUsaha: { contains: searchQuery, mode: 'insensitive' } },
-        { namaPemilik: { contains: searchQuery, mode: 'insensitive' } }
+        { umat: { nama: { contains: searchQuery, mode: 'insensitive' } } }
       ];
     }
 
     const rawData = await prisma.umkmData.findMany({
       where: whereClause,
       include: {
+        umat: true,
         lingkungan: true,
         kpsData: true,
         creator: { select: { name: true } },
@@ -109,10 +107,26 @@ export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
     // Convert BigInt id and Decimal to string for UI
     return rawData.map(umkm => ({
       ...umkm,
-      id: umkm.id.toString(),
+      id: umkm.id ? umkm.id.toString() : "",
+      umatId: umkm.umatId ? umkm.umatId.toString() : "",
+      createdBy: umkm.createdBy ? umkm.createdBy.toString() : null,
+      updatedBy: umkm.updatedBy ? umkm.updatedBy.toString() : null,
+      deletedBy: umkm.deletedBy ? umkm.deletedBy.toString() : null,
+      umat: umkm.umat ? {
+        ...umkm.umat,
+        id: umkm.umat.id ? umkm.umat.id.toString() : ""
+      } : null,
+      kpsData: umkm.kpsData ? {
+        ...umkm.kpsData,
+        id: umkm.kpsData.id ? umkm.kpsData.id.toString() : "",
+        umatId: umkm.kpsData.umatId ? umkm.kpsData.umatId.toString() : "",
+        createdBy: umkm.kpsData.createdBy ? umkm.kpsData.createdBy.toString() : null,
+        updatedBy: umkm.kpsData.updatedBy ? umkm.kpsData.updatedBy.toString() : null,
+        deletedBy: umkm.kpsData.deletedBy ? umkm.kpsData.deletedBy.toString() : null,
+        persentaseKelayakan: umkm.kpsData.persentaseKelayakan ? umkm.kpsData.persentaseKelayakan.toString() : "0"
+      } : null,
       asetTotal: umkm.asetTotal ? umkm.asetTotal.toString() : "0",
       omsetTahunan: umkm.omsetTahunan ? umkm.omsetTahunan.toString() : "0",
-      nik: umkm.nikEncrypted ? decryptString(umkm.nikEncrypted) : null,
       kpsId: umkm.kpsId ? umkm.kpsId.toString() : null,
     }));
   } catch (error) {
@@ -123,7 +137,7 @@ export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
 
 export async function updateUmkmAction(id: string, formData: FormData) {
   try {
-    const namaPemilik = formData.get("namaPemilik") as string;
+    const umatId = formData.get("umatId") as string;
     const namaUsaha = formData.get("namaUsaha") as string;
     const jenisUsaha = formData.get("jenisUsaha") as string;
     const asetTotalStr = formData.get("asetTotal") as string;
@@ -134,17 +148,15 @@ export async function updateUmkmAction(id: string, formData: FormData) {
     
     const nib = formData.get("nib") as string;
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
-    const nik = formData.get("nik") as string;
     const kpsId = formData.get("kpsId") as string;
     
-    const nikEncrypted = nik ? encryptString(nik) : null;
     const kpsIdBigInt = kpsId ? BigInt(kpsId) : null;
     
     // Status kelayakan otomatis (Aset <= 20jt, Omset <= 100jt). Jika kosong, dianggap memenuhi syarat.
     const isLayak = (asetTotal === null || asetTotal <= 20000000) && (omsetTahunan === null || omsetTahunan <= 100000000);
 
-    if (!namaPemilik || !namaUsaha || !lingkunganId) {
-      return { success: false, error: "Nama pemilik, usaha, dan lingkungan wajib diisi" };
+    if (!umatId || !namaUsaha || !lingkunganId) {
+      return { success: false, error: "Nama umat, usaha, dan lingkungan wajib diisi" };
     }
 
     const restriction = await getLingkunganRestriction();
@@ -163,7 +175,7 @@ export async function updateUmkmAction(id: string, formData: FormData) {
     const existingUmkm = await prisma.umkmData.findFirst({
       where: {
         namaUsaha: { equals: namaUsaha, mode: 'insensitive' },
-        namaPemilik: { equals: namaPemilik, mode: 'insensitive' },
+        umatId: BigInt(umatId),
         lingkunganId: lingkunganId,
         id: { not: BigInt(id) }
       }
@@ -179,14 +191,13 @@ export async function updateUmkmAction(id: string, formData: FormData) {
     await prisma.umkmData.safeUpdate({
       where: { id: BigInt(id) },
       data: {
-        namaPemilik,
+        umatId: BigInt(umatId),
         namaUsaha,
         jenisUsaha,
         asetTotal,
         omsetTahunan,
         nib,
         lingkunganId,
-        nikEncrypted,
         kpsId: kpsIdBigInt,
         statusKelayakan: isLayak,
       }
@@ -231,13 +242,15 @@ export async function getKpsByLingkungan(lingkunganId: number) {
 
     const data = await prisma.kpsData.findMany({
       where: { lingkunganId },
-      orderBy: { namaKepalaKeluarga: 'asc' },
+      include: { umat: true }
     });
     
     return data.map(item => ({
       ...item,
       id: item.id.toString(),
-    }));
+      umatId: item.umatId.toString(),
+      namaKepalaKeluarga: item.umat?.nama || "Tidak diketahui"
+    })).sort((a, b) => a.namaKepalaKeluarga.localeCompare(b.namaKepalaKeluarga));
   } catch (error) {
     console.error("Error fetching KPS:", error);
     return [];

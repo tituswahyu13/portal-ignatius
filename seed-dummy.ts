@@ -35,12 +35,19 @@ async function runSeeder() {
   const nikEnc = encryptString("3301111111111111");
   const kkEnc = encryptString("3301112222222222");
   
+  const umatKps = await prisma.dataUmat.create({
+    data: {
+      nama: "Bapak Budi (Dummy)",
+      lingkunganId: lingkunganId,
+      kkEncrypted: kkEnc,
+      nikEncrypted: nikEnc,
+      alamat: "Jl. Mangga No. 123",
+    }
+  });
+
   const kps = await prisma.kpsData.create({
     data: {
-      namaKepalaKeluarga: "Bapak Budi (Dummy)",
-      nikEncrypted: nikEnc,
-      kkEncrypted: kkEnc,
-      alamat: "Jl. Mangga No. 123",
+      umatId: umatKps.id,
       lingkunganId: lingkunganId,
       createdBy: userId,
       statusKeluarga: "Prasejahtera",
@@ -50,9 +57,16 @@ async function runSeeder() {
   console.log("✅ KPS Dummy Seeded");
 
   // 3. UMKM Data
+  const umatUmkm = await prisma.dataUmat.create({
+    data: {
+      nama: "Ibu Siti (Dummy)",
+      lingkunganId: lingkunganId,
+    }
+  });
+
   const umkm = await prisma.umkmData.create({
     data: {
-      namaPemilik: "Ibu Siti (Dummy)",
+      umatId: umatUmkm.id,
       namaUsaha: "Warung Nasi Siti",
       lingkunganId: lingkunganId,
       asetTotal: 15000000,

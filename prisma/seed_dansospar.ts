@@ -66,18 +66,35 @@ async function main() {
   ];
 
   for (const kps of dummyKps) {
+    const umat = await prisma.dataUmat.findFirst({
+      where: { nama: kps.namaKepalaKeluarga, lingkunganId: lingkungan.id }
+    });
+    
+    let umatId;
+    if (umat) {
+      umatId = umat.id;
+    } else {
+      const newUmat = await prisma.dataUmat.create({
+        data: {
+          nama: kps.namaKepalaKeluarga,
+          lingkunganId: lingkungan.id,
+          kkEncrypted: encryptString(kps.kk),
+          nikEncrypted: encryptString(kps.nik),
+          alamat: kps.alamat
+        }
+      });
+      umatId = newUmat.id;
+    }
+
     const kpsExists = await prisma.kpsData.findFirst({
-      where: { namaKepalaKeluarga: kps.namaKepalaKeluarga }
+      where: { umatId }
     });
 
     if (!kpsExists) {
       await prisma.kpsData.create({
         data: {
           lingkunganId: lingkungan.id,
-          namaKepalaKeluarga: kps.namaKepalaKeluarga,
-          nikEncrypted: encryptString(kps.nik),
-          kkEncrypted: encryptString(kps.kk),
-          alamat: kps.alamat,
+          umatId,
           skorPekerjaan: kps.skorPekerjaan,
           skorSandang: kps.skorSandang,
           skorPangan: kps.skorPangan,
@@ -128,15 +145,32 @@ async function main() {
   ];
 
   for (const umkm of dummyUmkm) {
+    const umat = await prisma.dataUmat.findFirst({
+      where: { nama: umkm.namaPemilik, lingkunganId: lingkungan.id }
+    });
+    
+    let umatId;
+    if (umat) {
+      umatId = umat.id;
+    } else {
+      const newUmat = await prisma.dataUmat.create({
+        data: {
+          nama: umkm.namaPemilik,
+          lingkunganId: lingkungan.id
+        }
+      });
+      umatId = newUmat.id;
+    }
+
     const umkmExists = await prisma.umkmData.findFirst({
-      where: { namaUsaha: umkm.namaUsaha }
+      where: { namaUsaha: umkm.namaUsaha, umatId }
     });
 
     if (!umkmExists) {
       await prisma.umkmData.create({
         data: {
           lingkunganId: lingkungan.id,
-          namaPemilik: umkm.namaPemilik,
+          umatId,
           namaUsaha: umkm.namaUsaha,
           jenisUsaha: umkm.jenisUsaha,
           asetTotal: umkm.asetTotal,

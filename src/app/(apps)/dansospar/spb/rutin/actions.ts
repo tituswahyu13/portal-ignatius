@@ -7,11 +7,16 @@ import { getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 // 1. Dapatkan daftar KPS di lingkungan untuk dropdown
 export async function getKpsForRoutineSpb(lingkunganId?: number) {
   const where = lingkunganId ? { lingkunganId } : {};
-  return await prisma.kpsData.findMany({
+  const data = await prisma.kpsData.findMany({
     where,
-    orderBy: { namaKepalaKeluarga: 'asc' },
-    select: { id: true, namaKepalaKeluarga: true, lingkungan: { select: { namaLingkungan: true } } }
+    orderBy: { umat: { nama: 'asc' } },
+    include: { umat: true, lingkungan: { select: { namaLingkungan: true } } }
   });
+  return data.map(k => ({
+    id: k.id,
+    namaKepalaKeluarga: k.umat?.nama || "Tidak diketahui",
+    lingkungan: k.lingkungan
+  }));
 }
 
 // 2. Daftarkan SPB Rutin Baru
@@ -76,7 +81,7 @@ export async function generateMonthlyRoutineSpbAction(monthStr: string) {
     // 2. Ambil semua SPB rutin yang aktif
     const activeRoutines = await prisma.recurringSpb.findMany({
       where: { isActive: true },
-      include: { kpsData: true }
+      include: { kpsData: { include: { umat: true } } }
     });
 
     if (activeRoutines.length === 0) {
@@ -136,7 +141,7 @@ export async function generateMonthlyRoutineSpbAction(monthStr: string) {
             amount: nominal,
             sourceType: "SPB_REALIZATION",
             referenceId: nomorSpb,
-            description: `Pencairan dana SPB RUTIN untuk ${nomorSpb} - ${routine.kpsData.namaKepalaKeluarga}`,
+            description: `Pencairan dana SPB RUTIN untuk ${nomorSpb} - ${routine.kpsData.umat?.nama || "KPS"}`,
             createdBy: currentUser.id,
           }
         });

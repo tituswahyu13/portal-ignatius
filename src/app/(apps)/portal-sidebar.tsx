@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface PortalSidebarProps {
   userName: string;
@@ -123,8 +124,9 @@ export function PortalSidebar({
             )}
           </nav>
           
-          <div className="px-4 mt-auto border-t pt-4">
+          <div className="px-4 mt-auto border-t pt-4 flex items-center justify-between">
              <UserProfileMenu userName={userName} roleName={roleName} initials={initials} />
+             <NotificationBell />
           </div>
         </div>
       </aside>

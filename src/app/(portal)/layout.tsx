@@ -8,8 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "../(auth)/login/actions";
-
 import { getCurrentUser } from "@/lib/auth/permissions";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 export default async function PortalLayout({
   children,
@@ -27,6 +27,7 @@ export default async function PortalLayout({
         <div className="container flex h-16 items-center justify-between">
           <h1 className="text-lg font-bold tracking-tight">Portal Ignatius</h1>
           <nav className="flex items-center gap-4">
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-primary">
                 <span className="hidden text-sm font-medium md:block">{userName}</span>

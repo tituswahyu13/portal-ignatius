@@ -105,7 +105,7 @@ export function KpsTable({
           {kpsData.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.lingkungan?.namaLingkungan || "Tidak diketahui"}</TableCell>
-              <TableCell>{item.namaKepalaKeluarga}</TableCell>
+              <TableCell>{item.umat?.nama || "Tidak diketahui"}</TableCell>
               <TableCell>
                 <code className="text-xs bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</code>
               </TableCell>
@@ -139,7 +139,7 @@ export function KpsTable({
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Kepala Keluarga</span>
-                          <span className="col-span-2 font-medium">{item.namaKepalaKeluarga}</span>
+                          <span className="col-span-2 font-medium">{item.umat?.nama || "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">NIK</span>
@@ -151,19 +151,19 @@ export function KpsTable({
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">No. HP</span>
-                          <span className="col-span-2 font-medium">{item.noHp || "-"}</span>
+                          <span className="col-span-2 font-medium">{item.umat?.noHp || "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Pekerjaan</span>
-                          <span className="col-span-2 font-medium">{item.pekerjaan || "-"}</span>
+                          <span className="col-span-2 font-medium">{item.umat?.pekerjaan || "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Tgl Lahir</span>
-                          <span className="col-span-2 font-medium">{item.tanggalLahir ? new Date(item.tanggalLahir).toLocaleDateString('id-ID') : "-"}</span>
+                          <span className="col-span-2 font-medium">{item.umat?.tanggalLahir ? new Date(item.umat?.tanggalLahir).toLocaleDateString('id-ID') : "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Alamat</span>
-                          <span className="col-span-2 font-medium">{item.alamat}</span>
+                          <span className="col-span-2 font-medium">{item.umat?.alamat || "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Dibuat</span>

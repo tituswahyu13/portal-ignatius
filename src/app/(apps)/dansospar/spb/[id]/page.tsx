@@ -19,8 +19,8 @@ export default async function SpbDetailPage({ params }: { params: { id: string }
     include: {
       lingkungan: true,
       intensiAccount: true,
-      kpsData: true,
-      umkmData: true,
+      kpsData: { include: { umat: true } },
+      umkmData: { include: { umat: true } },
       creator: true,
       attachments: true
     }
@@ -31,9 +31,9 @@ export default async function SpbDetailPage({ params }: { params: { id: string }
   }
 
   const pemohon = spb.kpsData
-    ? spb.kpsData.namaKepalaKeluarga
+    ? spb.kpsData.umat?.nama
     : spb.umkmData
-      ? `${spb.umkmData.namaUsaha} (${spb.umkmData.namaPemilik})`
+      ? `${spb.umkmData.namaUsaha} (${spb.umkmData.umat?.nama})`
       : "-";
 
   const canReviewPic = await hasPermission("REVIEW_SPB_PIC");

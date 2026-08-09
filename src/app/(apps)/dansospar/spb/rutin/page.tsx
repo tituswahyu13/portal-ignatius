@@ -20,7 +20,7 @@ export default async function SpbRutinPage() {
   // 1. Get Data
   const routines = await prisma.recurringSpb.findMany({
     include: {
-      kpsData: { include: { lingkungan: true } },
+      kpsData: { include: { lingkungan: true, umat: true } },
       intensiAccount: true
     },
     orderBy: { createdAt: 'desc' }
@@ -90,7 +90,7 @@ export default async function SpbRutinPage() {
                   routines.map((routine) => (
                     <TableRow key={routine.id.toString()}>
                       <TableCell>
-                        <div className="font-medium">{routine.kpsData.namaKepalaKeluarga}</div>
+                        <div className="font-medium">{routine.kpsData.umat?.nama || "KPS"}</div>
                         <div className="text-xs text-muted-foreground">{routine.kpsData.lingkungan.namaLingkungan}</div>
                       </TableCell>
                       <TableCell>{routine.kategoriBantuan}</TableCell>
