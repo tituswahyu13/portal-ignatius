@@ -14,7 +14,7 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
   const canReadSpb = await hasPermission("SPB_READ");
   const canManageSpbRutin = await hasPermission("SPB_RUTIN_MANAGE");
   const canReadKeuangan = (await hasPermission("INTENSI_READ")) || (await hasPermission("MUTASI_READ"));
-  const canReadLaporanKeuangan = await hasPermission("LAPORAN_KEUANGAN_READ");
+  const canReadLaporanKeuangan = true; // Transparan untuk semua umat
 
   const restriction = await getLingkunganRestriction();
   const whereClause: any = restriction.restricted
