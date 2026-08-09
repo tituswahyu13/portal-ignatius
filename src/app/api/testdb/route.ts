@@ -5,10 +5,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const nullCount = await prisma.dataUmat.count({
-      where: { lingkunganId: null }
-    });
-    return NextResponse.json({ success: true, nullCount });
+    const result = await prisma.$queryRaw`SELECT count(*) FROM data_umat WHERE kk_encrypted IS NOT NULL AND length(kk_encrypted) < 50;`;
+    
+    // Convert BigInt to string so JSON.stringify doesn't break
+    const unencryptedCount = result[0].count.toString();
+    
+    return NextResponse.json({ success: true, unencryptedCount });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message });
   }

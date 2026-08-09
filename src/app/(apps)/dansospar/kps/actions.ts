@@ -79,21 +79,34 @@ export async function createKpsAction(formData: FormData) {
     const skorPendidikan = parseInt(formData.get("skorPendidikan") as string || "0");
     const skorSosial = parseInt(formData.get("skorSosial") as string || "0");
 
-    const allScores = [
-      skorPekerjaan, skorSandang, skorPangan, skorPapan, 
-      skorKesehatan, skorPendidikan, skorSosial
-    ];
+    const weights = {
+      skorPekerjaan: 25,
+      skorPangan: 20,
+      skorPapan: 15,
+      skorKesehatan: 15,
+      skorSandang: 10,
+      skorPendidikan: 10,
+      skorSosial: 5
+    };
 
-    // Hitung jumlah indikator yang aktif (skor > 0)
-    const indikatorAktif = allScores.filter(s => s > 0).length;
+    let totalWeightedScore = 0;
+    let totalActiveWeight = 0;
     
-    // Total skor yang diperoleh
-    const totalSkor = allScores.reduce((a, b) => a + b, 0);
+    // Total skor mentah (opsional untuk ditampilkan)
+    const totalSkor = skorPekerjaan + skorSandang + skorPangan + skorPapan + skorKesehatan + skorPendidikan + skorSosial;
+
+    if (skorPekerjaan > 0) { totalWeightedScore += (skorPekerjaan / 3) * weights.skorPekerjaan; totalActiveWeight += weights.skorPekerjaan; }
+    if (skorPangan > 0) { totalWeightedScore += (skorPangan / 3) * weights.skorPangan; totalActiveWeight += weights.skorPangan; }
+    if (skorPapan > 0) { totalWeightedScore += (skorPapan / 3) * weights.skorPapan; totalActiveWeight += weights.skorPapan; }
+    if (skorKesehatan > 0) { totalWeightedScore += (skorKesehatan / 3) * weights.skorKesehatan; totalActiveWeight += weights.skorKesehatan; }
+    if (skorSandang > 0) { totalWeightedScore += (skorSandang / 3) * weights.skorSandang; totalActiveWeight += weights.skorSandang; }
+    if (skorPendidikan > 0) { totalWeightedScore += (skorPendidikan / 3) * weights.skorPendidikan; totalActiveWeight += weights.skorPendidikan; }
+    if (skorSosial > 0) { totalWeightedScore += (skorSosial / 3) * weights.skorSosial; totalActiveWeight += weights.skorSosial; }
 
     // Kalkulasi persentase
     let persentaseKelayakan = 0;
-    if (indikatorAktif > 0) {
-      persentaseKelayakan = (totalSkor / (indikatorAktif * 3)) * 100;
+    if (totalActiveWeight > 0) {
+      persentaseKelayakan = (totalWeightedScore / totalActiveWeight) * 100;
     }
 
     // Tentukan status KPS
@@ -245,17 +258,34 @@ export async function updateKpsAction(id: string, formData: FormData) {
     const skorPendidikan = parseInt(formData.get("skorPendidikan") as string || "0");
     const skorSosial = parseInt(formData.get("skorSosial") as string || "0");
 
-    const allScores = [
-      skorPekerjaan, skorSandang, skorPangan, skorPapan, 
-      skorKesehatan, skorPendidikan, skorSosial
-    ];
+    const weights = {
+      skorPekerjaan: 25,
+      skorPangan: 20,
+      skorPapan: 15,
+      skorKesehatan: 15,
+      skorSandang: 10,
+      skorPendidikan: 10,
+      skorSosial: 5
+    };
 
-    const indikatorAktif = allScores.filter(s => s > 0).length;
-    const totalSkor = allScores.reduce((a, b) => a + b, 0);
+    let totalWeightedScore = 0;
+    let totalActiveWeight = 0;
+    
+    // Total skor mentah (opsional untuk ditampilkan)
+    const totalSkor = skorPekerjaan + skorSandang + skorPangan + skorPapan + skorKesehatan + skorPendidikan + skorSosial;
 
+    if (skorPekerjaan > 0) { totalWeightedScore += (skorPekerjaan / 3) * weights.skorPekerjaan; totalActiveWeight += weights.skorPekerjaan; }
+    if (skorPangan > 0) { totalWeightedScore += (skorPangan / 3) * weights.skorPangan; totalActiveWeight += weights.skorPangan; }
+    if (skorPapan > 0) { totalWeightedScore += (skorPapan / 3) * weights.skorPapan; totalActiveWeight += weights.skorPapan; }
+    if (skorKesehatan > 0) { totalWeightedScore += (skorKesehatan / 3) * weights.skorKesehatan; totalActiveWeight += weights.skorKesehatan; }
+    if (skorSandang > 0) { totalWeightedScore += (skorSandang / 3) * weights.skorSandang; totalActiveWeight += weights.skorSandang; }
+    if (skorPendidikan > 0) { totalWeightedScore += (skorPendidikan / 3) * weights.skorPendidikan; totalActiveWeight += weights.skorPendidikan; }
+    if (skorSosial > 0) { totalWeightedScore += (skorSosial / 3) * weights.skorSosial; totalActiveWeight += weights.skorSosial; }
+
+    // Kalkulasi persentase
     let persentaseKelayakan = 0;
-    if (indikatorAktif > 0) {
-      persentaseKelayakan = (totalSkor / (indikatorAktif * 3)) * 100;
+    if (totalActiveWeight > 0) {
+      persentaseKelayakan = (totalWeightedScore / totalActiveWeight) * 100;
     }
 
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";

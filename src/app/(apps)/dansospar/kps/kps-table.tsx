@@ -158,8 +158,19 @@ export function KpsTable({
                           <span className="col-span-2 font-medium">{item.umat?.pekerjaan || "-"}</span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
-                          <span className="font-semibold text-muted-foreground">Tgl Lahir</span>
-                          <span className="col-span-2 font-medium">{item.umat?.tanggalLahir ? new Date(item.umat?.tanggalLahir).toLocaleDateString('id-ID') : "-"}</span>
+                          <span className="font-semibold text-muted-foreground">Usia</span>
+                          <span className="col-span-2 font-medium">
+                            {item.umat?.tanggalLahir ? (() => {
+                              const birthDate = new Date(item.umat.tanggalLahir);
+                              const today = new Date();
+                              let age = today.getFullYear() - birthDate.getFullYear();
+                              const m = today.getMonth() - birthDate.getMonth();
+                              if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                age--;
+                              }
+                              return `${age} Tahun`;
+                            })() : "-"}
+                          </span>
                         </div>
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Alamat</span>

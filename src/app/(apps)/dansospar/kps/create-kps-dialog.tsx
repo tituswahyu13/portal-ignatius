@@ -12,49 +12,49 @@ import { createKpsAction, getUmatByLingkungan } from "./actions";
 const INDICATORS = [
   { 
     name: "skorPekerjaan", 
-    label: "1. Pekerjaan & Pemasukan",
+    label: "1. Pekerjaan & Pemasukan (25%)",
     desc1: "Serabutan, tidak menentu, atau bergantung belas kasihan orang lain.",
     desc2: "Pemasukan rutin bulanan ada, namun pas-pasan (habis untuk bulanan).",
     desc3: "Pemasukan stabil/punya usaha berjalan, mampu menabung rutin."
   },
   { 
-    name: "skorSandang", 
-    label: "2. Sandang (Pakaian)",
-    desc1: "Kesulitan membeli pakaian baru, baju yang dimiliki sangat terbatas, lusuh, atau mengandalkan donasi/pemberian baju bekas layak pakai.",
-    desc2: "Mampu membeli pakaian baru hanya pada momen tertentu, sisanya menggunakan pakaian yang ada secara hemat.",
-    desc3: "Kebutuhan sandang terpenuhi dengan sangat baik, mampu membeli pakaian baru kapan saja."
-  },
-  { 
     name: "skorPangan", 
-    label: "3. Kebutuhan Pangan",
+    label: "2. Kebutuhan Pangan (20%)",
     desc1: "Sering kesulitan makan harian (hanya mampu 1-2 kali sehari).",
     desc2: "Makan 3 kali sehari terpenuhi, namun menu seadanya (rendah gizi).",
     desc3: "Kebutuhan pangan harian sangat terjamin dan bergizi seimbang."
   },
   { 
+    name: "skorSandang", 
+    label: "3. Sandang (Pakaian) (10%)",
+    desc1: "Kesulitan membeli pakaian baru, baju yang dimiliki sangat terbatas, lusuh, atau mengandalkan donasi/pemberian baju bekas layak pakai.",
+    desc2: "Mampu membeli pakaian baru hanya pada momen tertentu, sisanya menggunakan pakaian yang ada secara hemat.",
+    desc3: "Kebutuhan sandang terpenuhi dengan sangat baik, mampu membeli pakaian baru kapan saja."
+  },
+  { 
     name: "skorPapan", 
-    label: "4. Tempat Tinggal",
+    label: "4. Tempat Tinggal (15%)",
     desc1: "Menumpang di tempat kerabat, tidak layak huni, atau terancam digusur.",
     desc2: "Tinggal di rumah warisan bersama (belum dibagi) atau kontrak/kos layak.",
     desc3: "Rumah milik pribadi yang sah (sertifikat sendiri) dan layak huni."
   },
   { 
     name: "skorKesehatan", 
-    label: "5. Kesehatan",
+    label: "5. Kesehatan (15%)",
     desc1: "Ada sakit kronis/lansia rentan, tidak ada jaminan/BPJS, obat tersendat.",
     desc2: "Memiliki BPJS aktif (PBI/Mandiri Kelas 3), kondisi fisik umum sehat.",
     desc3: "Punya proteksi kesehatan yang baik (BPJS Kelas 1/2 atau asuransi swasta)."
   },
   { 
     name: "skorPendidikan", 
-    label: "6. Pendidikan",
+    label: "6. Pendidikan (10%)",
     desc1: "Anak menunggak biaya sekolah, terancam putus sekolah/kuliah karena biaya.",
     desc2: "Anak bersekolah lancar, namun sering kesulitan saat bayar uang ujian/buku.",
     desc3: "Seluruh biaya sekolah/kuliah anak terbayar lancar tanpa kendala finansial."
   },
   { 
     name: "skorSosial", 
-    label: "7. Sosial Komunitas",
+    label: "7. Sosial Komunitas (5%)",
     desc1: "Tidak pernah mampu membayar iuran lingkungan karena faktor ekonomi.",
     desc2: "Kadang-kadang membayar iuran jika ada dana lebih di dompet.",
     desc3: "Rutin membayar iuran lingkungan, kolekte, dan aktif menjadi donatur aksi sosial."
