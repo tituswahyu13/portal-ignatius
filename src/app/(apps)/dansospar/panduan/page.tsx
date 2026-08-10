@@ -155,7 +155,7 @@ export default function PanduanPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Selain melihat skor secara mandiri, sistem mampu menghubungkan data secara bersilang (<em>Cross-Validation</em>). 
                   Sistem mengecek <strong>Usia Kepala Keluarga</strong> dari Master Data Umat dan membandingkannya dengan <strong>Skor Pekerjaan</strong>. 
-                  Jika warga berstatus Lansia ($\ge$ 60 tahun) dan skor pekerjaannya Rentan (Skor 1), maka sistem akan tegas menyarankan pemberian <strong>Bantuan Sembako/Kesehatan Rutin</strong> (tidak menyarankan bantuan modal usaha karena usia). Sebaliknya, untuk warga Usia Produktif, sistem akan mendorong pemberian <strong>Modal UMKM</strong> agar bisa mandiri.
+                  Jika warga berstatus Lansia (&ge; 60 tahun) dan skor pekerjaannya Rentan (Skor 1), maka sistem akan tegas menyarankan pemberian <strong>Bantuan Sembako/Kesehatan Rutin</strong> (tidak menyarankan bantuan modal usaha karena usia). Sebaliknya, untuk warga Usia Produktif (&lt; 60 tahun), sistem akan mendorong pemberian <strong>Modal UMKM</strong> agar bisa mandiri.
                 </p>
               </div>
             </CardContent>

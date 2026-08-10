@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Map, ChevronLeft, Menu, X } from "lucide-react";
+import { Users, Map, ChevronLeft, Menu, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function DataUmatSidebar() {
@@ -70,6 +70,7 @@ export function DataUmatSidebar() {
         </div>
         
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          <SidebarItem href="/dataumat/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard Statistik" currentPath={pathname} />
           <SidebarItem href="/dataumat" icon={<Users size={20} />} label="Daftar Umat" currentPath={pathname} />
           <SidebarItem href="/dataumat/lingkungan" icon={<Map size={20} />} label="Daftar Lingkungan" currentPath={pathname} />
         </nav>
