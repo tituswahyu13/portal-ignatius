@@ -136,7 +136,7 @@ export default function PanduanPage() {
                     <div className="flex items-center gap-2 font-bold text-red-600 dark:text-red-500 mb-1">
                       <AlertTriangle className="h-4 w-4" /> Deteksi Kondisi Kritis
                     </div>
-                    <p className="text-xs text-muted-foreground">Setiap ada indikator yang diberi <strong>Skor 1</strong>, sistem memunculkan <em>alert merah</em> agar Pengurus langsung tahu kelemahan utama keluarga tersebut (misal: "Risiko Pangan Kritis").</p>
+                    <p className="text-xs text-muted-foreground">Setiap ada indikator yang diberi <strong>Skor 1</strong>, sistem memunculkan <em>alert merah</em> agar Pengurus langsung tahu kelemahan utama keluarga tersebut (misal: &quot;Risiko Pangan Kritis&quot;).</p>
                   </div>
                   <div className="border border-yellow-500/50 bg-yellow-500/10 p-4 rounded-lg">
                     <div className="flex items-center gap-2 font-bold text-yellow-600 dark:text-yellow-500 mb-1">
