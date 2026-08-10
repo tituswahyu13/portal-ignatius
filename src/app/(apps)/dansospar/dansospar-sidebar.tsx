@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart, Repeat, Inbox } from "lucide-react";
+import { LayoutDashboard, Users, Store, FileText, Wallet, Menu, X, ChevronLeft, PieChart, Repeat, Inbox, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserProfileMenu } from "@/components/auth/user-profile-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -133,6 +133,11 @@ export function DanSosParSidebar({
             </div>
           )}
           {canReadLaporanKeuangan && <SidebarItem href="/dansospar/laporan-keuangan" icon={<PieChart size={20} />} label="Laporan Keuangan" currentPath={pathname} />}
+          
+          <div className="pt-4 pb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bantuan</p>
+          </div>
+          <SidebarItem href="/dansospar/panduan" icon={<Book size={20} />} label="Panduan Aplikasi" currentPath={pathname} />
         </nav>
 
         <div className="p-4 border-t bg-background space-y-4">
