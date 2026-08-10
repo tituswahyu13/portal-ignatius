@@ -17,6 +17,8 @@ export default async function PortalPage() {
   const canAccessGlobal = await hasModuleAccess("GLOBAL");
   const canAccessDansospar = await hasModuleAccess("DANSOSPAR");
 
+  const canAccessDataUmat = await hasModuleAccess("DATAUMAT");
+
   const apps = [
     ...(canAccessGlobal
       ? [
@@ -38,13 +40,16 @@ export default async function PortalPage() {
           },
         ]
       : []),
-    {
-      name: "Data Umat",
-      description: "Sistem data umat paroki.",
-      href: "/dataumat",
-      icon: UsersRound,
-      comingSoon: true,
-    },
+    ...(canAccessDataUmat
+      ? [
+          {
+            name: "Data Umat",
+            description: "Sistem pendataan umat paroki dan lingkungan.",
+            href: "/dataumat",
+            icon: UsersRound,
+          },
+        ]
+      : []),
     {
       name: "Keuangan Paroki",
       description: "Pengelolaan keuangan paroki.",

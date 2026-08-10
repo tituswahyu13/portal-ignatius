@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search as SearchIcon } from "lucide-react";
+import { KpsAnalysis } from "./kps-analysis";
 
 export function KpsTable({ 
   kpsData, 
@@ -50,6 +51,12 @@ export function KpsTable({
     router.push(`/dansospar/kps?${params.toString()}`);
   };
 
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = () => {
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+  };
+
   if (kpsData.length === 0) {
     return (
       <div className="text-center p-8 border rounded-md bg-muted/20">
@@ -57,6 +64,13 @@ export function KpsTable({
       </div>
     );
   }
+
+  const sortedData = [...kpsData].sort((a, b) => {
+    const pctA = Number(a.persentaseKelayakan) || 0;
+    const pctB = Number(b.persentaseKelayakan) || 0;
+    const comparison = pctA - pctB;
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
 
   return (
     <div className="space-y-4">
@@ -96,13 +110,21 @@ export function KpsTable({
             <TableHead>Lingkungan</TableHead>
             <TableHead>Kepala Keluarga</TableHead>
             <TableHead>NIK (Tersensor)</TableHead>
-            <TableHead>Status Kelayakan</TableHead>
+            <TableHead 
+              className="cursor-pointer hover:bg-muted/50 transition-colors" 
+              onClick={handleSort}
+            >
+              <div className="flex items-center gap-1">
+                Status Kelayakan
+                <span className="text-xs text-muted-foreground">{sortDirection === "asc" ? "↑" : "↓"}</span>
+              </div>
+            </TableHead>
             <TableHead>Total Skor</TableHead>
-            <TableHead className="w-[100px] text-right">Aksi</TableHead>
+            <TableHead className="text-center w-[120px]">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {kpsData.map((item) => (
+          {sortedData.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.lingkungan?.namaLingkungan || "Tidak diketahui"}</TableCell>
               <TableCell>{item.umat?.nama || "Tidak diketahui"}</TableCell>
@@ -128,7 +150,7 @@ export function KpsTable({
                         Detail
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-md">
+                    <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Detail Data KPS</DialogTitle>
                       </DialogHeader>
@@ -203,6 +225,9 @@ export function KpsTable({
                             <div className="flex justify-between"><span>Sosial:</span> <span className="font-bold">{item.skorSosial}</span></div>
                             <div className="flex justify-between"><span>Papan:</span> <span className="font-bold">{item.skorPapan}</span></div>
                           </div>
+                        </div>
+                        <div className="pt-4 border-t">
+                          <KpsAnalysis kps={item} />
                         </div>
                       </div>
                     </DialogContent>

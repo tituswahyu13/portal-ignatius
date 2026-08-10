@@ -13,6 +13,7 @@ interface PortalSidebarProps {
   roleName: string;
   initials: string;
   canAccessDansospar: boolean;
+  canAccessDataUmat: boolean;
   canAccessGlobal: boolean;
 }
 
@@ -21,6 +22,7 @@ export function PortalSidebar({
   roleName,
   initials,
   canAccessDansospar,
+  canAccessDataUmat,
   canAccessGlobal
 }: PortalSidebarProps) {
   const pathname = usePathname();
@@ -28,7 +30,7 @@ export function PortalSidebar({
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if we are inside a specific module (like /dansospar)
-  const isInsideModule = pathname?.startsWith("/dansospar") || pathname?.startsWith("/usermanagement");
+  const isInsideModule = pathname?.startsWith("/dansospar") || pathname?.startsWith("/usermanagement") || pathname?.startsWith("/dataumat");
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -104,6 +106,22 @@ export function PortalSidebar({
                   ⛪
                 </div>
                 <span className="whitespace-nowrap">DanSosPar</span>
+              </Link>
+            )}
+
+            {canAccessDataUmat && (
+              <Link
+                href="/dataumat"
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname?.startsWith("/dataumat") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                }`}
+              >
+                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${
+                  pathname?.startsWith("/dataumat") ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  📋
+                </div>
+                <span className="whitespace-nowrap">Data Umat</span>
               </Link>
             )}
 

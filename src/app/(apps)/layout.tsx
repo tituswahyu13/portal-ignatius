@@ -23,6 +23,7 @@ export default async function AppsLayout({
   
   // Calculate which modules the user has access to
   const canAccessDansospar = await hasModuleAccess("DANSOSPAR");
+  const canAccessDataUmat = await hasModuleAccess("DATAUMAT");
   const canAccessGlobal = await hasModuleAccess("GLOBAL");
   
   // Extract user info for sidebar
@@ -38,6 +39,7 @@ export default async function AppsLayout({
         roleName={roleName}
         initials={initials}
         canAccessDansospar={canAccessDansospar}
+        canAccessDataUmat={canAccessDataUmat}
         canAccessGlobal={canAccessGlobal}
       />
       <main className="flex-1 overflow-y-auto">

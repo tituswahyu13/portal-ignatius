@@ -106,7 +106,11 @@ async function main() {
     { name: "MUTASI_UPDATE", appModule: "DANSOSPAR", desc: "Ubah data mutasi kas" },
     { name: "MUTASI_DELETE", appModule: "DANSOSPAR", desc: "Hapus data mutasi kas" },
 
-    { name: "LAPORAN_KEUANGAN_READ", appModule: "DANSOSPAR", desc: "Lihat dan cetak Laporan Keuangan" }
+    { name: "LAPORAN_KEUANGAN_READ", appModule: "DANSOSPAR", desc: "Lihat dan cetak Laporan Keuangan" },
+
+    // Data Umat
+    { name: "GLOBAL_SETTINGS_MANAGE", appModule: "GLOBAL", desc: "Kelola pengaturan global (Lingkungan, dll)" },
+    { name: "DATAUMAT_MANAGE", appModule: "DATAUMAT", desc: "Kelola master data umat" }
   ];
 
   for (const p of permissionsToCreate) {
@@ -138,13 +142,13 @@ async function main() {
 
   // Definisikan pemetaan Role ke Permissions
   const rolePermissionMapping: Record<string, string[]> = {
-    "Ketua Lingkungan": ["SPB_CREATE", "SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
-    "PSE Wilayah/Lingkungan": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD"],
-    "Ketua PSE": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "KPS_READ", "UMKM_READ"],
+    "Ketua Lingkungan": ["SPB_CREATE", "SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD", "DATAUMAT_MANAGE"],
+    "PSE Wilayah/Lingkungan": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "DATAUMAT_MANAGE"],
+    "Ketua PSE": ["REVIEW_SPB_PIC", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "KPS_READ", "UMKM_READ", "DATAUMAT_MANAGE"],
     "Ketua Dansospar": ["APPROVE_SPB_TPDSP", "SPB_READ", "SPB_UPDATE", "SPB_DELETE", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ", "SPB_RUTIN_MANAGE"],
-    "Sekretaris Dansospar": ["SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD"],
+    "Sekretaris Dansospar": ["SPB_READ", "KPS_READ", "UMKM_READ", "VIEW_DANSOSPAR_DASHBOARD", "DATAUMAT_MANAGE"],
     "Bendahara Dansospar": ["REALIZE_SPB", "SPB_READ", "INTENSI_READ", "MUTASI_CREATE", "MUTASI_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ", "SPB_RUTIN_MANAGE"],
-    "Pastor": ["APPROVE_SPB_PASTOR", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ"]
+    "Pastor": ["APPROVE_SPB_PASTOR", "SPB_READ", "VIEW_DANSOSPAR_DASHBOARD", "LAPORAN_KEUANGAN_READ", "DATAUMAT_MANAGE"]
   };
 
   // Aplikasikan pemetaan
