@@ -8,6 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateKpsAction, getUmatByLingkungan } from "./actions";
 import { Edit2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const INDICATORS = [
   { 
@@ -118,20 +127,33 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" title="Edit KPS">
-          <Edit2 className="h-4 w-4 text-blue-500" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Ubah Data KPS</DialogTitle>
-        </DialogHeader>
-        
-        {error && <div className="p-3 text-sm bg-red-500/10 text-red-500 rounded-md">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <AlertDialog open={!!error} onOpenChange={(open) => { if(!open) setError(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Peringatan</AlertDialogTitle>
+            <AlertDialogDescription className="text-red-600 font-medium">
+              {error}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setError("")}>Mengerti</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="sm" title="Edit KPS">
+            <Edit2 className="h-4 w-4 text-blue-500" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ubah Data KPS</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Lingkungan</Label>
@@ -212,6 +234,17 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
               <Input name="nik" placeholder="Masukkan 16 digit NIK baru" defaultValue={kps.nikDecryptedMasked || ""} />
               <p className="text-xs text-muted-foreground">Ketik ulang 16 digit jika ingin mengubah NIK.</p>
             </div>
+            <div className="space-y-2">
+              <Label>Pekerjaan (Opsional - Perbarui Data)</Label>
+              <Input name="pekerjaan" placeholder="Misal: Karyawan Swasta, Wiraswasta" defaultValue={kps.umat?.pekerjaan || ""} />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Profesi/Keahlian (Opsional)</Label>
+              <Input name="profesi" placeholder="Misal: Teknisi, Penjahit, Guru" defaultValue={kps.umat?.profesi || ""} />
+            </div>
           </div>
 
           <div className="border rounded-md p-4 space-y-4 bg-muted/20">
@@ -247,5 +280,6 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

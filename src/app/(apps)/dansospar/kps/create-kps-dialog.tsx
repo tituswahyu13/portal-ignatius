@@ -8,6 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createKpsAction, getUmatByLingkungan } from "./actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const INDICATORS = [
   { 
@@ -75,10 +84,15 @@ export function CreateKpsDialog({
   const [selectedLingkungan, setSelectedLingkungan] = useState<string>(
     restriction?.restricted ? restriction.lingkunganId.toString() : ""
   );
-  const [umatList, setUmatList] = useState<{id: string, nama: string}[]>([]);
+  const [umatList, setUmatList] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUmatId, setSelectedUmatId] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // States for autofill
+  const [autofillPekerjaan, setAutofillPekerjaan] = useState("");
+  const [autofillProfesi, setAutofillProfesi] = useState("");
+  const [autofillNik, setAutofillNik] = useState("");
 
   useEffect(() => {
     if (selectedLingkungan) {
@@ -89,9 +103,21 @@ export function CreateKpsDialog({
     // Reset selection when lingkungan changes
     setSelectedUmatId("");
     setSearchQuery("");
+    setAutofillPekerjaan("");
+    setAutofillProfesi("");
+    setAutofillNik("");
   }, [selectedLingkungan]);
 
   const filteredUmat = umatList.filter(u => u.nama.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleSelectUmat = (u: any) => {
+    setSelectedUmatId(u.id);
+    setSearchQuery(u.nama);
+    setAutofillPekerjaan(u.pekerjaan || "");
+    setAutofillProfesi(u.profesi || "");
+    setAutofillNik(u.nikMasked || "");
+    setShowDropdown(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,6 +139,9 @@ export function CreateKpsDialog({
       setOpen(false);
       setSelectedUmatId("");
       setSearchQuery("");
+      setAutofillPekerjaan("");
+      setAutofillProfesi("");
+      setAutofillNik("");
     } else {
       setError(result.error || "Gagal menyimpan data");
     }
@@ -120,18 +149,31 @@ export function CreateKpsDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Tambah Data KPS</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Pendaftaran Keluarga Pra-Sejahtera (KPS)</DialogTitle>
-        </DialogHeader>
-        
-        {error && <div className="p-3 text-sm bg-red-500/10 text-red-500 rounded-md">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <AlertDialog open={!!error} onOpenChange={(open) => { if(!open) setError(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Peringatan Pendaftaran</AlertDialogTitle>
+            <AlertDialogDescription className="text-red-600 font-medium">
+              {error}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setError("")}>Mengerti</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button>Tambah Data KPS</Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pendaftaran Keluarga Pra-Sejahtera (KPS)</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="lingkunganId">Lingkungan <span className="text-red-500">*</span></Label>
@@ -171,6 +213,9 @@ export function CreateKpsDialog({
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setSelectedUmatId(""); // reset if they type
+                    setAutofillPekerjaan("");
+                    setAutofillProfesi("");
+                    setAutofillNik("");
                     setShowDropdown(true);
                   }}
                   onFocus={() => {
@@ -187,11 +232,7 @@ export function CreateKpsDialog({
                         <div 
                           key={u.id}
                           className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
-                          onClick={() => {
-                            setSelectedUmatId(u.id);
-                            setSearchQuery(u.nama);
-                            setShowDropdown(false);
-                          }}
+                          onClick={() => handleSelectUmat(u)}
                         >
                           {u.nama}
                         </div>
@@ -211,10 +252,35 @@ export function CreateKpsDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>NIK (Opsional - Perbarui Data)</Label>
-              <Input name="nik" placeholder="Isi untuk memperbarui NIK di Data Umat" maxLength={16} />
-              <p className="text-xs text-muted-foreground">NIK akan dienkripsi (AES-256).</p>
+              <Input 
+                name="nik" 
+                placeholder="Isi 16 digit NIK baru" 
+                maxLength={16} 
+                defaultValue={autofillNik} 
+                key={`nik-${selectedUmatId}`}
+              />
+              <p className="text-xs text-muted-foreground">Ketik ulang 16 digit untuk mengubah NIK tersensor.</p>
             </div>
             <div className="space-y-2">
+              <Label>Pekerjaan (Opsional - Perbarui Data)</Label>
+              <Input 
+                name="pekerjaan" 
+                placeholder="Misal: Karyawan Swasta, Wiraswasta" 
+                defaultValue={autofillPekerjaan}
+                key={`pekerjaan-${selectedUmatId}`}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Profesi/Keahlian (Opsional)</Label>
+              <Input 
+                name="profesi" 
+                placeholder="Misal: Teknisi, Penjahit, Guru" 
+                defaultValue={autofillProfesi}
+                key={`profesi-${selectedUmatId}`}
+              />
             </div>
           </div>
 
@@ -264,5 +330,6 @@ export function CreateKpsDialog({
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -38,10 +38,33 @@ export async function getUmatByLingkungan(lingkunganId: number) {
       select: {
         id: true,
         nama: true,
+        pekerjaan: true,
+        profesi: true,
+        nikEncrypted: true
       }
     });
-    return data.map(d => ({ id: d.id.toString(), nama: d.nama }));
+    const mappedData = data.map(d => {
+      let nikMasked = "";
+      if (d.nikEncrypted) {
+        try {
+          const decrypted = decryptString(d.nikEncrypted);
+          if (decrypted && !decrypted.includes("FAILED")) {
+            nikMasked = decrypted.substring(0, 6) + "******" + decrypted.substring(12);
+          }
+        } catch(e) {}
+      }
+      return { 
+        id: d.id.toString(), 
+        nama: d.nama,
+        pekerjaan: d.pekerjaan || "",
+        profesi: d.profesi || "",
+        nikMasked
+      };
+    });
+    console.log(`getUmatByLingkungan: Found ${mappedData.length} records for lingkungan ${lingkunganId}`);
+    return mappedData;
   } catch (error) {
+    console.error("Error getUmatByLingkungan:", error);
     return [];
   }
 }
@@ -61,13 +84,45 @@ export async function createKpsAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
-    // Periksa duplikasi KPS
+    // Periksa duplikasi orang (umatId)
     const existingKps = await prisma.kpsData.findUnique({
       where: { umatId: BigInt(umatId) }
     });
 
     if (existingKps) {
       return { success: false, error: "Umat ini sudah terdaftar sebagai KPS." };
+    }
+
+    // Periksa duplikasi No. KK
+    const currentUmat = await prisma.dataUmat.findUnique({
+      where: { id: BigInt(umatId) },
+      select: { kkEncrypted: true, nama: true }
+    });
+
+    if (currentUmat?.kkEncrypted) {
+      try {
+        const currentKkPlain = decryptString(currentUmat.kkEncrypted);
+        
+        // Cek semua KPS lain yang ada di database
+        const allKps = await prisma.kpsData.findMany({
+          include: { umat: { select: { kkEncrypted: true, nama: true } } }
+        });
+
+        for (const kps of allKps) {
+          if (kps.umat?.kkEncrypted) {
+            try {
+              const kpsKkPlain = decryptString(kps.umat.kkEncrypted);
+              if (kpsKkPlain === currentKkPlain && kpsKkPlain !== "" && kpsKkPlain !== "[DECRYPTION_FAILED]") {
+                return { success: false, error: `No. KK ini sudah terdaftar atas nama ${kps.umat.nama}. Satu KK hanya boleh memiliki satu data KPS.` };
+              }
+            } catch (e) {
+              // Abaikan jika gagal dekripsi
+            }
+          }
+        }
+      } catch (e) {
+        // Abaikan jika gagal dekripsi KK pengguna saat ini
+      }
     }
 
     // Ambil nilai skor (0 berarti N/A atau tidak dinilai)
@@ -112,12 +167,19 @@ export async function createKpsAction(formData: FormData) {
     // Tentukan status KPS
     const statusKeluarga = persentaseKelayakan < 66 ? "Prasejahtera" : "Sejahtera";
 
-    // Jika ada input NIK baru, perbarui data umatnya
-    if (nik && nik.length === 16) {
-      const nikEncrypted = encryptString(nik);
+    // Perbarui data umat jika ada input opsional yang diisi
+    const pekerjaan = formData.get("pekerjaan") as string;
+    const profesi = formData.get("profesi") as string;
+    
+    const updateData: any = {};
+    if (nik && nik.length === 16) updateData.nikEncrypted = encryptString(nik);
+    if (pekerjaan) updateData.pekerjaan = pekerjaan;
+    if (profesi) updateData.profesi = profesi;
+
+    if (Object.keys(updateData).length > 0) {
       await prisma.dataUmat.update({
         where: { id: BigInt(umatId) },
-        data: { nikEncrypted }
+        data: updateData
       });
     }
 
@@ -292,12 +354,18 @@ export async function updateKpsAction(id: string, formData: FormData) {
 
     // NIK (Only update if they exist and are not masked with '*')
     const nik = formData.get("nik") as string;
+    const pekerjaan = formData.get("pekerjaan") as string;
+    const profesi = formData.get("profesi") as string;
     
-    if (nik && !nik.includes("*") && nik.length === 16) {
-      const nikEncrypted = encryptString(nik);
+    const updateData: any = {};
+    if (nik && !nik.includes("*") && nik.length === 16) updateData.nikEncrypted = encryptString(nik);
+    if (pekerjaan) updateData.pekerjaan = pekerjaan;
+    if (profesi) updateData.profesi = profesi;
+
+    if (Object.keys(updateData).length > 0) {
       await prisma.dataUmat.update({
         where: { id: BigInt(umatId) },
-        data: { nikEncrypted }
+        data: updateData
       });
     }
 
