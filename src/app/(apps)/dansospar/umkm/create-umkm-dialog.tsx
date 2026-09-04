@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { createUmkmAction, getKpsByLingkungan } from "./actions";
 import { getUmatByLingkungan } from "../kps/actions";
 
@@ -206,14 +207,102 @@ export function CreateUmkmDialog({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nama Usaha</Label>
-              <Input name="namaUsaha" required placeholder="Cth: Warung Tegal" />
+          <div className="space-y-4 border p-4 rounded-md bg-muted/20">
+            <h4 className="font-semibold text-sm">Informasi Usaha</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nama Usaha</Label>
+                <Input name="namaUsaha" required placeholder="Cth: Warung Tegal" />
+              </div>
+              <div className="space-y-2">
+                <Label>Kategori Usaha</Label>
+                <Select name="kategoriUsaha">
+                  <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Produksi">Produksi</SelectItem>
+                    <SelectItem value="Perdagangan">Perdagangan</SelectItem>
+                    <SelectItem value="Jasa">Jasa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label>Jenis Usaha</Label>
+              <Label>Jenis Usaha Spesifik</Label>
               <Input name="jenisUsaha" placeholder="Cth: Kuliner" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Alamat Usaha</Label>
+              <Textarea name="alamatUsaha" placeholder="Kosongkan jika sama dengan alamat tinggal" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Deskripsi Usaha</Label>
+              <Textarea name="deskripsiUsaha" placeholder="Jelaskan secara singkat mengenai usaha ini" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Keberadaan Usaha</Label>
+                <Select name="keberadaanUsaha">
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sudah ada</SelectItem>
+                    <SelectItem value="false">Belum ada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Kondisi Usaha Saat Ini</Label>
+                <Input name="kondisiUsahaSaatIni" placeholder="Cth: Berjalan lancar" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Keahlian (Skill)</Label>
+              <Input name="keahlian" placeholder="Keahlian yang relevan dengan usaha" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Pengalaman Usaha Sebelumnya</Label>
+              <Textarea name="pengalamanUsahaSebelumnya" placeholder="Pengalaman yang dimiliki sebelumnya" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Pelatihan Tata Kelola Keuangan</Label>
+                <Select name="pelatihanKeuangan">
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sudah mengikuti</SelectItem>
+                    <SelectItem value="false">Belum mengikuti</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Anggota Paguyuban UMKM Paroki</Label>
+                <Select name="anggotaPaguyuban">
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Ya</SelectItem>
+                    <SelectItem value="false">Tidak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Analisa Usaha</Label>
+              <Select name="analisaUsaha">
+                <SelectTrigger><SelectValue placeholder="Pilih Penilaian" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Ada dan jelas">Ada dan jelas</SelectItem>
+                  <SelectItem value="Ada, tetapi tidak jelas">Ada, tetapi tidak jelas</SelectItem>
+                  <SelectItem value="Tidak ada">Tidak ada</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -230,6 +319,12 @@ export function CreateUmkmDialog({
               <Label>Omset Tahunan (Rp)</Label>
               <Input type="number" name="omsetTahunan" placeholder="Misal: 30000000" min="0" />
             </div>
+          </div>
+
+          <div className="space-y-2 border p-4 rounded-md bg-muted/20">
+            <Label>Lampiran (Opsional)</Label>
+            <Input type="file" name="lampiran" accept="image/*,.pdf" />
+            <p className="text-xs text-muted-foreground">Unggah foto NIB, tempat usaha, atau dokumen pendukung lainnya.</p>
           </div>
 
           <div className="flex justify-end pt-4">

@@ -4,6 +4,7 @@ import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { encryptString, decryptString } from "@/lib/encryption";
 import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
+import { uploadFileToDrive } from "@/lib/gdrive";
 
 export async function createUmkmAction(formData: FormData) {
   try {
@@ -20,6 +21,21 @@ export async function createUmkmAction(formData: FormData) {
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     const kpsId = formData.get("kpsId") as string;
     
+    // New Fields
+    const alamatUsaha = formData.get("alamatUsaha") as string || null;
+    const kategoriUsaha = formData.get("kategoriUsaha") as string || null;
+    const deskripsiUsaha = formData.get("deskripsiUsaha") as string || null;
+    const keberadaanUsahaStr = formData.get("keberadaanUsaha") as string;
+    const keberadaanUsaha = keberadaanUsahaStr === 'true' ? true : keberadaanUsahaStr === 'false' ? false : null;
+    const kondisiUsahaSaatIni = formData.get("kondisiUsahaSaatIni") as string || null;
+    const keahlian = formData.get("keahlian") as string || null;
+    const pengalamanUsahaSebelumnya = formData.get("pengalamanUsahaSebelumnya") as string || null;
+    const pelatihanKeuanganStr = formData.get("pelatihanKeuangan") as string;
+    const pelatihanKeuangan = pelatihanKeuanganStr === 'true' ? true : pelatihanKeuanganStr === 'false' ? false : null;
+    const anggotaPaguyubanStr = formData.get("anggotaPaguyuban") as string;
+    const anggotaPaguyuban = anggotaPaguyubanStr === 'true' ? true : anggotaPaguyubanStr === 'false' ? false : null;
+    const analisaUsaha = formData.get("analisaUsaha") as string || null;
+
     const kpsIdBigInt = kpsId ? BigInt(kpsId) : null;
     
     // Status kelayakan otomatis (Aset <= 20jt, Omset <= 100jt). Jika kosong, dianggap memenuhi syarat.
@@ -47,8 +63,27 @@ export async function createUmkmAction(formData: FormData) {
       return { success: false, error: "Data UMKM dengan nama usaha dan pemilik ini sudah terdaftar di lingkungan tersebut." };
     }
 
+    if (nib && nib.trim() !== "") {
+      const nibCount = await prisma.umkmData.count({
+        where: { nib: nib.trim() }
+      });
+      
+      if (nibCount >= 2) {
+        return { success: false, error: `Pengajuan bantuan untuk NIB ${nib} sudah mencapai batas maksimal (2 kali).` };
+      }
+    }
+
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
+
+    // --- UPLOAD KE GOOGLE DRIVE (Opsional) ---
+    let googleDriveFileId = null;
+    const file = formData.get("lampiran") as File | null;
+    if (file && file.size > 0 && file.name !== 'undefined') {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = `UMKM_${namaUsaha.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+      googleDriveFileId = await uploadFileToDrive(buffer, fileName, file.type);
+    }
 
     await prisma.umkmData.safeCreate({
       data: {
@@ -61,6 +96,17 @@ export async function createUmkmAction(formData: FormData) {
         lingkunganId,
         kpsId: kpsIdBigInt,
         statusKelayakan: isLayak,
+        googleDriveFileId,
+        alamatUsaha,
+        kategoriUsaha,
+        deskripsiUsaha,
+        keberadaanUsaha,
+        kondisiUsahaSaatIni,
+        keahlian,
+        pengalamanUsahaSebelumnya,
+        pelatihanKeuangan,
+        anggotaPaguyuban,
+        analisaUsaha,
       }
     }, user.id);
 
@@ -128,6 +174,7 @@ export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
       asetTotal: umkm.asetTotal ? umkm.asetTotal.toString() : "0",
       omsetTahunan: umkm.omsetTahunan ? umkm.omsetTahunan.toString() : "0",
       kpsId: umkm.kpsId ? umkm.kpsId.toString() : null,
+      googleDriveFileId: umkm.googleDriveFileId,
     }));
   } catch (error) {
     console.error("Gagal mengambil data UMKM:", error);
@@ -150,6 +197,21 @@ export async function updateUmkmAction(id: string, formData: FormData) {
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     const kpsId = formData.get("kpsId") as string;
     
+    // New Fields
+    const alamatUsaha = formData.get("alamatUsaha") as string || null;
+    const kategoriUsaha = formData.get("kategoriUsaha") as string || null;
+    const deskripsiUsaha = formData.get("deskripsiUsaha") as string || null;
+    const keberadaanUsahaStr = formData.get("keberadaanUsaha") as string;
+    const keberadaanUsaha = keberadaanUsahaStr === 'true' ? true : keberadaanUsahaStr === 'false' ? false : null;
+    const kondisiUsahaSaatIni = formData.get("kondisiUsahaSaatIni") as string || null;
+    const keahlian = formData.get("keahlian") as string || null;
+    const pengalamanUsahaSebelumnya = formData.get("pengalamanUsahaSebelumnya") as string || null;
+    const pelatihanKeuanganStr = formData.get("pelatihanKeuangan") as string;
+    const pelatihanKeuangan = pelatihanKeuanganStr === 'true' ? true : pelatihanKeuanganStr === 'false' ? false : null;
+    const anggotaPaguyubanStr = formData.get("anggotaPaguyuban") as string;
+    const anggotaPaguyuban = anggotaPaguyubanStr === 'true' ? true : anggotaPaguyubanStr === 'false' ? false : null;
+    const analisaUsaha = formData.get("analisaUsaha") as string || null;
+
     const kpsIdBigInt = kpsId ? BigInt(kpsId) : null;
     
     // Status kelayakan otomatis (Aset <= 20jt, Omset <= 100jt). Jika kosong, dianggap memenuhi syarat.
@@ -185,22 +247,59 @@ export async function updateUmkmAction(id: string, formData: FormData) {
       return { success: false, error: "Data UMKM dengan nama usaha dan pemilik ini sudah terdaftar di lingkungan tersebut pada entri lain." };
     }
 
+    if (nib && nib.trim() !== "") {
+      const nibCount = await prisma.umkmData.count({
+        where: { 
+          nib: nib.trim(),
+          id: { not: BigInt(id) } 
+        }
+      });
+      
+      if (nibCount >= 2) {
+        return { success: false, error: `Pengajuan bantuan untuk NIB ${nib} sudah mencapai batas maksimal (2 kali).` };
+      }
+    }
+
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
+    let googleDriveFileId: string | null | undefined = undefined;
+    const file = formData.get("lampiran") as File | null;
+    if (file && file.size > 0 && file.name !== 'undefined') {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = `UMKM_${namaUsaha.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+      googleDriveFileId = await uploadFileToDrive(buffer, fileName, file.type);
+    }
+
+    const dataToUpdate: any = {
+      umatId: BigInt(umatId),
+      namaUsaha,
+      jenisUsaha,
+      asetTotal,
+      omsetTahunan,
+      nib,
+      lingkunganId,
+      kpsId: kpsIdBigInt,
+      statusKelayakan: isLayak,
+      alamatUsaha,
+      kategoriUsaha,
+      deskripsiUsaha,
+      keberadaanUsaha,
+      kondisiUsahaSaatIni,
+      keahlian,
+      pengalamanUsahaSebelumnya,
+      pelatihanKeuangan,
+      anggotaPaguyuban,
+      analisaUsaha,
+    };
+    
+    if (googleDriveFileId) {
+      dataToUpdate.googleDriveFileId = googleDriveFileId;
+    }
+
     await prisma.umkmData.safeUpdate({
       where: { id: BigInt(id) },
-      data: {
-        umatId: BigInt(umatId),
-        namaUsaha,
-        jenisUsaha,
-        asetTotal,
-        omsetTahunan,
-        nib,
-        lingkunganId,
-        kpsId: kpsIdBigInt,
-        statusKelayakan: isLayak,
-      }
+      data: dataToUpdate
     }, user.id);
 
     revalidatePath("/dansospar/umkm");

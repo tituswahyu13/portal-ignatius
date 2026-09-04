@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { updateUmkmAction, getKpsByLingkungan } from "./actions";
 import { getUmatByLingkungan } from "../kps/actions";
 import { Edit2 } from "lucide-react";
@@ -185,14 +186,102 @@ export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: an
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Nama Usaha</Label>
-              <Input name="namaUsaha" required defaultValue={umkm.namaUsaha} />
+          <div className="space-y-4 border p-4 rounded-md bg-muted/20">
+            <h4 className="font-semibold text-sm">Informasi Usaha</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nama Usaha</Label>
+                <Input name="namaUsaha" required defaultValue={umkm.namaUsaha} />
+              </div>
+              <div className="space-y-2">
+                <Label>Kategori Usaha</Label>
+                <Select name="kategoriUsaha" defaultValue={umkm.kategoriUsaha || undefined}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Produksi">Produksi</SelectItem>
+                    <SelectItem value="Perdagangan">Perdagangan</SelectItem>
+                    <SelectItem value="Jasa">Jasa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label>Jenis Usaha</Label>
+              <Label>Jenis Usaha Spesifik</Label>
               <Input name="jenisUsaha" defaultValue={umkm.jenisUsaha} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Alamat Usaha</Label>
+              <Textarea name="alamatUsaha" defaultValue={umkm.alamatUsaha || ""} placeholder="Kosongkan jika sama dengan alamat tinggal" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Deskripsi Usaha</Label>
+              <Textarea name="deskripsiUsaha" defaultValue={umkm.deskripsiUsaha || ""} placeholder="Jelaskan secara singkat mengenai usaha ini" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Keberadaan Usaha</Label>
+                <Select name="keberadaanUsaha" defaultValue={umkm.keberadaanUsaha !== null ? umkm.keberadaanUsaha.toString() : undefined}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sudah ada</SelectItem>
+                    <SelectItem value="false">Belum ada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Kondisi Usaha Saat Ini</Label>
+                <Input name="kondisiUsahaSaatIni" defaultValue={umkm.kondisiUsahaSaatIni || ""} placeholder="Cth: Berjalan lancar" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Keahlian (Skill)</Label>
+              <Input name="keahlian" defaultValue={umkm.keahlian || ""} placeholder="Keahlian yang relevan dengan usaha" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Pengalaman Usaha Sebelumnya</Label>
+              <Textarea name="pengalamanUsahaSebelumnya" defaultValue={umkm.pengalamanUsahaSebelumnya || ""} placeholder="Pengalaman yang dimiliki sebelumnya" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Pelatihan Tata Kelola Keuangan</Label>
+                <Select name="pelatihanKeuangan" defaultValue={umkm.pelatihanKeuangan !== null ? umkm.pelatihanKeuangan.toString() : undefined}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Sudah mengikuti</SelectItem>
+                    <SelectItem value="false">Belum mengikuti</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Anggota Paguyuban UMKM Paroki</Label>
+                <Select name="anggotaPaguyuban" defaultValue={umkm.anggotaPaguyuban !== null ? umkm.anggotaPaguyuban.toString() : undefined}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Ya</SelectItem>
+                    <SelectItem value="false">Tidak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Analisa Usaha</Label>
+              <Select name="analisaUsaha" defaultValue={umkm.analisaUsaha || undefined}>
+                <SelectTrigger><SelectValue placeholder="Pilih Penilaian" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Ada dan jelas">Ada dan jelas</SelectItem>
+                  <SelectItem value="Ada, tetapi tidak jelas">Ada, tetapi tidak jelas</SelectItem>
+                  <SelectItem value="Tidak ada">Tidak ada</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -210,6 +299,26 @@ export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: an
           <div className="space-y-2">
             <Label>NIB (opsional)</Label>
             <Input name="nib" defaultValue={umkm.nib || ""} />
+          </div>
+
+          <div className="space-y-2 border p-4 rounded-md bg-muted/20">
+            <Label>Lampiran UMKM</Label>
+            {umkm.googleDriveFileId && (
+              <div className="mb-2">
+                <a 
+                  href={`https://drive.google.com/file/d/${umkm.googleDriveFileId}/view`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  Lihat Lampiran Saat Ini
+                </a>
+              </div>
+            )}
+            <Input type="file" name="lampiran" accept="image/*,.pdf" />
+            <p className="text-xs text-muted-foreground">
+              {umkm.googleDriveFileId ? "Unggah file baru jika ingin mengganti lampiran yang sudah ada." : "Unggah foto NIB, tempat usaha, atau dokumen pendukung lainnya."}
+            </p>
           </div>
 
           <div className="flex justify-end pt-4">

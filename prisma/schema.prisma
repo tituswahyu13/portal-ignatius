@@ -207,6 +207,19 @@ model UmkmData {
   updatedBy       BigInt?   @map("updated_by")
   deletedAt       DateTime? @map("deleted_at")
   deletedBy       BigInt?   @map("deleted_by")
+  googleDriveFileId String? @map("google_drive_file_id") @db.VarChar(255)
+  
+  // New Operational Fields
+  alamatUsaha       String?   @map("alamat_usaha") @db.Text
+  kategoriUsaha     String?   @map("kategori_usaha") @db.VarChar(50) // Produksi, Perdagangan, Jasa
+  deskripsiUsaha    String?   @map("deskripsi_usaha") @db.Text
+  keberadaanUsaha   Boolean?  @map("keberadaan_usaha") // true: Sudah ada, false: Belum ada
+  kondisiUsahaSaatIni String? @map("kondisi_usaha_saat_ini") @db.Text
+  keahlian          String?   @map("keahlian") @db.Text
+  pengalamanUsahaSebelumnya String? @map("pengalaman_usaha_sebelumnya") @db.Text
+  pelatihanKeuangan Boolean?  @map("pelatihan_keuangan") // true: Sudah mengikuti, false: Belum mengikuti
+  anggotaPaguyuban  Boolean?  @map("anggota_paguyuban") // true: Ya, false: Tidak
+  analisaUsaha      String?   @map("analisa_usaha") @db.VarChar(100) // Ada dan jelas, Ada tetapi tidak jelas, Tidak ada
 
   // Relations
   creator     User?        @relation("UmkmCreator", fields: [createdBy], references: [id])

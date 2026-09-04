@@ -4,14 +4,13 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, FileText, Search as SearchIcon } from "lucide-react";
 import { deleteUmkmAction } from "./actions";
 import { formatRupiah } from "@/lib/utils";
 import { EditUmkmDialog } from "./edit-umkm-dialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search as SearchIcon } from "lucide-react";
 
 export function UmkmTable({ 
   umkmData, 
@@ -141,6 +140,14 @@ export function UmkmTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
+                    {umkm.googleDriveFileId && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`https://drive.google.com/file/d/${umkm.googleDriveFileId}/view`} target="_blank" rel="noopener noreferrer">
+                          <FileText className="h-4 w-4 mr-1" />
+                          Lampiran
+                        </a>
+                      </Button>
+                    )}
                     {canWrite && <EditUmkmDialog umkm={umkm} lingkungan={lingkungan} />}
                     {canDelete && (
                       <Button 
