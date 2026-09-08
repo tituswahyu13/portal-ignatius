@@ -95,9 +95,9 @@ export function KpsAnalysis({ kps }: KpsAnalysisProps) {
     });
   } else if (kps.skorKesehatan === 2) {
     recommendations.push({
-      title: "Kerentanan Kesehatan",
-      message: "Sering sakit musiman atau ada keluhan ringan menahun. Pertimbangkan bantuan vitamin atau klinik gratis.",
-      type: "warning"
+      title: "Kesehatan Terpantau",
+      message: "Memiliki BPJS aktif dan kondisi umum sehat. Pantau jika ada kendala dalam pembayaran iuran BPJS mandiri.",
+      type: "info"
     });
   }
 
@@ -116,12 +116,11 @@ export function KpsAnalysis({ kps }: KpsAnalysisProps) {
     });
   }
 
-  // Analisa Sosial & Sandang
   if (kps.skorSosial === 1) {
     recommendations.push({
-      title: "Isolasi Sosial",
-      message: "Keluarga terisolasi, tidak ada kerabat, atau dikucilkan. Butuh kunjungan pastoral/lingkungan rutin.",
-      type: "critical"
+      title: "Kendala Pembayaran Iuran",
+      message: "Tidak pernah mampu membayar iuran lingkungan karena faktor ekonomi. Dapat dipertimbangkan untuk pembebasan iuran lingkungan/paroki.",
+      type: "warning"
     });
   }
   if (kps.skorSandang === 1) {

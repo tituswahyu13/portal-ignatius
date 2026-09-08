@@ -61,6 +61,14 @@ export function EditUmkmDialog({ umkm, lingkungan }: { umkm: any, lingkungan: an
       setLoading(false);
       return;
     }
+    
+    const file = formData.get("lampiran") as File | null;
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError("Ukuran file lampiran maksimal 5 MB.");
+      setLoading(false);
+      return;
+    }
+
     formData.append("umatId", selectedUmatId);
 
     const result = await updateUmkmAction(umkm.id, formData);

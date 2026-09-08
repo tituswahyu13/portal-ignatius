@@ -80,6 +80,10 @@ export async function createUmkmAction(formData: FormData) {
     let googleDriveFileId = null;
     const file = formData.get("lampiran") as File | null;
     if (file && file.size > 0 && file.name !== 'undefined') {
+      if (file.size > 5 * 1024 * 1024) {
+        return { success: false, error: "Ukuran file lampiran maksimal 5 MB." };
+      }
+      
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = `UMKM_${namaUsaha.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
       googleDriveFileId = await uploadFileToDrive(buffer, fileName, file.type);
@@ -266,6 +270,10 @@ export async function updateUmkmAction(id: string, formData: FormData) {
     let googleDriveFileId: string | null | undefined = undefined;
     const file = formData.get("lampiran") as File | null;
     if (file && file.size > 0 && file.name !== 'undefined') {
+      if (file.size > 5 * 1024 * 1024) {
+        return { success: false, error: "Ukuran file lampiran maksimal 5 MB." };
+      }
+      
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = `UMKM_${namaUsaha.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
       googleDriveFileId = await uploadFileToDrive(buffer, fileName, file.type);

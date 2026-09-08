@@ -69,6 +69,14 @@ export function CreateUmkmDialog({
       setLoading(false);
       return;
     }
+    
+    const file = formData.get("lampiran") as File | null;
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError("Ukuran file lampiran maksimal 5 MB.");
+      setLoading(false);
+      return;
+    }
+
     formData.append("umatId", selectedUmatId);
 
     const result = await createUmkmAction(formData);
