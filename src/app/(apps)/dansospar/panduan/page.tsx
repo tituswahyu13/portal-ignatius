@@ -134,15 +134,15 @@ export default function PanduanPage() {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="border border-red-500/50 bg-red-500/10 p-4 rounded-lg">
                     <div className="flex items-center gap-2 font-bold text-red-600 dark:text-red-500 mb-1">
-                      <AlertTriangle className="h-4 w-4" /> Deteksi Kondisi Kritis
+                      <AlertTriangle className="h-4 w-4" /> Deteksi Kondisi Kritis & Peringatan
                     </div>
-                    <p className="text-xs text-muted-foreground">Setiap ada indikator yang diberi <strong>Skor 1</strong>, sistem memunculkan <em>alert merah</em> agar Pengurus langsung tahu kelemahan utama keluarga tersebut (misal: &quot;Risiko Pangan Kritis&quot;).</p>
+                    <p className="text-xs text-muted-foreground">Sistem akan memunculkan <em>alert merah (Kritis)</em> untuk indikator utama berskor <strong>1 (Rentan)</strong> (misal: "Risiko Pangan Kritis"), atau <em>alert kuning (Peringatan)</em> untuk indikator sekunder seperti kendala iuran agar Pengurus langsung tahu kelemahan keluarga tersebut.</p>
                   </div>
                   <div className="border border-yellow-500/50 bg-yellow-500/10 p-4 rounded-lg">
                     <div className="flex items-center gap-2 font-bold text-yellow-600 dark:text-yellow-500 mb-1">
-                      <AlertTriangle className="h-4 w-4" /> Deteksi Kondisi Menengah
+                      <AlertTriangle className="h-4 w-4" /> Deteksi Kondisi Menengah & Terpantau
                     </div>
-                    <p className="text-xs text-muted-foreground">Setiap ada indikator berskor <strong>Skor 2</strong>, sistem memunculkan <em>alert kuning</em> agar Pengurus bisa menyiapkan langkah preventif.</p>
+                    <p className="text-xs text-muted-foreground">Untuk indikator berskor <strong>2 (Menengah)</strong>, sistem umumnya memunculkan <em>alert kuning</em> sebagai langkah preventif, atau <em>alert biru (Info)</em> bila kondisi relatif stabil namun tetap perlu dipantau (misal: kesehatan dengan BPJS kelas 3).</p>
                   </div>
                 </div>
               </div>
