@@ -45,7 +45,8 @@ export async function getUmatByLingkungan(lingkunganId: number) {
         kpsData: {
           select: {
             id: true,
-            statusKeluarga: true
+            statusKeluarga: true,
+            deletedAt: true
           }
         }
       }
@@ -67,7 +68,7 @@ export async function getUmatByLingkungan(lingkunganId: number) {
         pekerjaan: d.pekerjaan || "",
         profesi: d.profesi || "",
         nikMasked,
-        isKps: !!d.kpsData
+        isKps: !!(d.kpsData && !d.kpsData.deletedAt)
       };
     });
     console.log(`getUmatByLingkungan: Found ${mappedData.length} records for lingkungan ${lingkunganId}`);
@@ -93,7 +94,7 @@ export async function createKpsAction(formData: FormData) {
       return { success: false, error: "Anda hanya dapat membuat data untuk lingkungan Anda sendiri." };
     }
 
-    // Periksa duplikasi orang (umatId)
+    // Periksa duplikasi orang (umatId) hanya untuk yang aktif (belum dihapus)
     const existingKps = await prisma.kpsData.findUnique({
       where: { umatId: BigInt(umatId) },
       include: {
@@ -111,7 +112,7 @@ export async function createKpsAction(formData: FormData) {
       }
     });
 
-    if (existingKps) {
+    if (existingKps && !existingKps.deletedAt) {
       const namaUmat = existingKps.umat?.nama || "Umat yang dipilih";
       const namaBaptis = existingKps.umat?.namaBaptis ? ` (${existingKps.umat.namaBaptis})` : "";
       const lingkunganNama = existingKps.lingkungan?.namaLingkungan ? ` di Lingkungan ${existingKps.lingkungan.namaLingkungan}` : "";
@@ -121,7 +122,7 @@ export async function createKpsAction(formData: FormData) {
       };
     }
 
-    // Periksa duplikasi No. KK
+    // Periksa duplikasi No. KK (hanya pada KPS aktif)
     const currentUmat = await prisma.dataUmat.findUnique({
       where: { id: BigInt(umatId) },
       select: { kkEncrypted: true, nama: true, namaBaptis: true }
@@ -131,8 +132,9 @@ export async function createKpsAction(formData: FormData) {
       try {
         const currentKkPlain = decryptString(currentUmat.kkEncrypted);
         
-        // Cek semua KPS lain yang ada di database
+        // Cek semua KPS aktif lain yang ada di database
         const allKps = await prisma.kpsData.findMany({
+          where: { deletedAt: null },
           include: { 
             umat: { select: { kkEncrypted: true, nama: true, namaBaptis: true } },
             lingkungan: { select: { namaLingkungan: true } }
@@ -140,6 +142,9 @@ export async function createKpsAction(formData: FormData) {
         });
 
         for (const kps of allKps) {
+          // Lewati jika umatId sama (sedang mendaftarkan/mengaktifkan kembali umat yang sama)
+          if (kps.umatId.toString() === umatId) continue;
+
           if (kps.umat?.kkEncrypted) {
             try {
               const kpsKkPlain = decryptString(kps.umat.kkEncrypted);
@@ -223,22 +228,46 @@ export async function createKpsAction(formData: FormData) {
     const user = await getCurrentUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
-    await prisma.kpsData.safeCreate({
-      data: {
-        umatId: BigInt(umatId),
-        lingkunganId,
-        skorPekerjaan,
-        skorSandang,
-        skorPangan,
-        skorPapan,
-        skorKesehatan,
-        skorPendidikan,
-        skorSosial,
-        totalSkor,
-        persentaseKelayakan,
-        statusKeluarga
-      }
-    }, user.id);
+    // Jika sebelumnya ada data KPS yang pernah dihapus (soft delete), reaktivasi dengan skor baru
+    if (existingKps && existingKps.deletedAt) {
+      await prisma.kpsData.update({
+        where: { id: existingKps.id },
+        data: {
+          lingkunganId,
+          skorPekerjaan,
+          skorSandang,
+          skorPangan,
+          skorPapan,
+          skorKesehatan,
+          skorPendidikan,
+          skorSosial,
+          totalSkor,
+          persentaseKelayakan,
+          statusKeluarga,
+          deletedAt: null,
+          deletedBy: null,
+          updatedAt: new Date(),
+          updatedBy: user.id
+        }
+      });
+    } else {
+      await prisma.kpsData.safeCreate({
+        data: {
+          umatId: BigInt(umatId),
+          lingkunganId,
+          skorPekerjaan,
+          skorSandang,
+          skorPangan,
+          skorPapan,
+          skorKesehatan,
+          skorPendidikan,
+          skorSosial,
+          totalSkor,
+          persentaseKelayakan,
+          statusKeluarga
+        }
+      }, user.id);
+    }
 
     revalidatePath("/dansospar/kps");
     return { success: true };
