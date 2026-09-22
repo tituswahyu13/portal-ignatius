@@ -38,9 +38,16 @@ export async function getUmatByLingkungan(lingkunganId: number) {
       select: {
         id: true,
         nama: true,
+        namaBaptis: true,
         pekerjaan: true,
         profesi: true,
-        nikEncrypted: true
+        nikEncrypted: true,
+        kpsData: {
+          select: {
+            id: true,
+            statusKeluarga: true
+          }
+        }
       }
     });
     const mappedData = data.map(d => {
@@ -56,9 +63,11 @@ export async function getUmatByLingkungan(lingkunganId: number) {
       return { 
         id: d.id.toString(), 
         nama: d.nama,
+        namaBaptis: d.namaBaptis || "",
         pekerjaan: d.pekerjaan || "",
         profesi: d.profesi || "",
-        nikMasked
+        nikMasked,
+        isKps: !!d.kpsData
       };
     });
     console.log(`getUmatByLingkungan: Found ${mappedData.length} records for lingkungan ${lingkunganId}`);
@@ -86,17 +95,36 @@ export async function createKpsAction(formData: FormData) {
 
     // Periksa duplikasi orang (umatId)
     const existingKps = await prisma.kpsData.findUnique({
-      where: { umatId: BigInt(umatId) }
+      where: { umatId: BigInt(umatId) },
+      include: {
+        umat: {
+          select: {
+            nama: true,
+            namaBaptis: true,
+          }
+        },
+        lingkungan: {
+          select: {
+            namaLingkungan: true
+          }
+        }
+      }
     });
 
     if (existingKps) {
-      return { success: false, error: "Umat ini sudah terdaftar sebagai KPS." };
+      const namaUmat = existingKps.umat?.nama || "Umat yang dipilih";
+      const namaBaptis = existingKps.umat?.namaBaptis ? ` (${existingKps.umat.namaBaptis})` : "";
+      const lingkunganNama = existingKps.lingkungan?.namaLingkungan ? ` di Lingkungan ${existingKps.lingkungan.namaLingkungan}` : "";
+      return { 
+        success: false, 
+        error: `Umat yang Anda pilih (${namaUmat}${namaBaptis}) sudah pernah didaftarkan sebagai KPS sebelumnya${lingkunganNama}. Silakan periksa daftar KPS atau gunakan tombol Edit jika ingin memperbarui data.` 
+      };
     }
 
     // Periksa duplikasi No. KK
     const currentUmat = await prisma.dataUmat.findUnique({
       where: { id: BigInt(umatId) },
-      select: { kkEncrypted: true, nama: true }
+      select: { kkEncrypted: true, nama: true, namaBaptis: true }
     });
 
     if (currentUmat?.kkEncrypted) {
@@ -105,7 +133,10 @@ export async function createKpsAction(formData: FormData) {
         
         // Cek semua KPS lain yang ada di database
         const allKps = await prisma.kpsData.findMany({
-          include: { umat: { select: { kkEncrypted: true, nama: true } } }
+          include: { 
+            umat: { select: { kkEncrypted: true, nama: true, namaBaptis: true } },
+            lingkungan: { select: { namaLingkungan: true } }
+          }
         });
 
         for (const kps of allKps) {
@@ -113,7 +144,13 @@ export async function createKpsAction(formData: FormData) {
             try {
               const kpsKkPlain = decryptString(kps.umat.kkEncrypted);
               if (kpsKkPlain === currentKkPlain && kpsKkPlain !== "" && kpsKkPlain !== "[DECRYPTION_FAILED]") {
-                return { success: false, error: `No. KK ini sudah terdaftar atas nama ${kps.umat.nama}. Satu KK hanya boleh memiliki satu data KPS.` };
+                const namaBaru = currentUmat.nama + (currentUmat.namaBaptis ? ` (${currentUmat.namaBaptis})` : "");
+                const namaLama = kps.umat.nama + (kps.umat.namaBaptis ? ` (${kps.umat.namaBaptis})` : "");
+                const lingkunganLama = kps.lingkungan?.namaLingkungan ? ` di Lingkungan ${kps.lingkungan.namaLingkungan}` : "";
+                return { 
+                  success: false, 
+                  error: `Nomor KK milik "${namaBaru}" sama dengan data KPS yang sudah terdaftar atas nama "${namaLama}"${lingkunganLama}. Dalam satu KK hanya diperbolehkan mendaftarkan 1 data KPS.` 
+                };
               }
             } catch (e) {
               // Abaikan jika gagal dekripsi

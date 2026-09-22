@@ -64,11 +64,19 @@ export async function createDataUmat(formData: FormData) {
   try {
     const nama = formData.get("nama") as string;
     const lingkunganIdStr = formData.get("lingkunganId") as string;
-    const nik = formData.get("nik") as string;
-    const kk = formData.get("kk") as string;
+    const nik = (formData.get("nik") as string || "").trim();
+    const kk = (formData.get("kk") as string || "").trim();
 
-    if (!nama || !lingkunganIdStr || !nik || !kk) {
-      return { success: false, message: "Nama, Lingkungan, NIK, dan No KK wajib diisi." };
+    if (!nama || !lingkunganIdStr) {
+      return { success: false, message: "Nama Lengkap dan Lingkungan wajib diisi." };
+    }
+
+    if (nik && (nik.length !== 16 || !/^\d{16}$/.test(nik))) {
+      return { success: false, message: "NIK harus berupa 16 digit angka jika diisi." };
+    }
+
+    if (kk && (kk.length !== 16 || !/^\d{16}$/.test(kk))) {
+      return { success: false, message: "Nomor KK harus berupa 16 digit angka jika diisi." };
     }
 
     const restriction = await getLingkunganRestriction();
@@ -78,8 +86,8 @@ export async function createDataUmat(formData: FormData) {
       return { success: false, message: "Anda hanya dapat menambahkan umat di lingkungan Anda." };
     }
 
-    const nikEncrypted = encryptString(nik);
-    const kkEncrypted = encryptString(kk);
+    const nikEncrypted = nik ? encryptString(nik) : null;
+    const kkEncrypted = kk ? encryptString(kk) : null;
 
     // Parse optional fields
     const tanggalLahirStr = formData.get("tanggalLahir") as string;
@@ -132,13 +140,13 @@ export async function updateDataUmat(id: string, formData: FormData) {
       return { success: false, message: "Anda tidak memiliki akses untuk mengubah data umat di lingkungan ini." };
     }
 
-    const nama = formData.get("nama") as string;
+    const nama = (formData.get("nama") as string || "").trim();
     const lingkunganIdStr = formData.get("lingkunganId") as string;
-    const nik = formData.get("nik") as string;
-    const kk = formData.get("kk") as string;
+    const nik = (formData.get("nik") as string || "").trim();
+    const kk = (formData.get("kk") as string || "").trim();
 
-    if (!nama || !lingkunganIdStr || !nik || !kk) {
-      return { success: false, message: "Nama, Lingkungan, NIK, dan No KK wajib diisi." };
+    if (!nama || !lingkunganIdStr) {
+      return { success: false, message: "Nama Lengkap dan Lingkungan wajib diisi." };
     }
 
     const lingkunganId = parseInt(lingkunganIdStr);
@@ -147,15 +155,32 @@ export async function updateDataUmat(id: string, formData: FormData) {
     }
 
     let nikEncrypted = umat.nikEncrypted;
-    // Check if NIK is not masked, meaning it was edited
-    if (nik && !nik.includes("*")) {
-      nikEncrypted = encryptString(nik);
+    // Check if NIK was edited
+    if (nik) {
+      if (!nik.includes("*")) {
+        if (nik.length !== 16 || !/^\d{16}$/.test(nik)) {
+          return { success: false, message: "NIK harus berupa 16 digit angka." };
+        }
+        nikEncrypted = encryptString(nik);
+      }
+      // If contains "*", preserve existing nikEncrypted
+    } else {
+      // If user cleared the NIK
+      nikEncrypted = null;
     }
 
     let kkEncrypted = umat.kkEncrypted;
-    // Check if KK is not masked
-    if (kk && !kk.includes("*")) {
-      kkEncrypted = encryptString(kk);
+    // Check if KK was edited
+    if (kk) {
+      if (!kk.includes("*")) {
+        if (kk.length !== 16 || !/^\d{16}$/.test(kk)) {
+          return { success: false, message: "Nomor KK harus berupa 16 digit angka." };
+        }
+        kkEncrypted = encryptString(kk);
+      }
+      // If contains "*", preserve existing kkEncrypted
+    } else {
+      kkEncrypted = null;
     }
 
     // Parse optional fields

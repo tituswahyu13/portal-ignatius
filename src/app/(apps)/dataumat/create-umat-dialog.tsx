@@ -21,9 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { createDataUmat } from "./actions";
-
 
 interface CreateUmatDialogProps {
   lingkungans: { id: number; namaLingkungan: string }[];
@@ -35,22 +34,25 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("identitas");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   async function onSubmit(formData: FormData) {
     setIsLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
     try {
-      // Validasi NIK dan KK
-      const nik = formData.get("nik") as string;
-      const kk = formData.get("kk") as string;
+      const nik = (formData.get("nik") as string || "").trim();
+      const kk = (formData.get("kk") as string || "").trim();
       
-      if (!nik || nik.length < 16) {
-        alert("Validasi Gagal: NIK tidak valid (minimal 16 digit)");
+      if (nik && (nik.length !== 16 || !/^\d{16}$/.test(nik))) {
+        setErrorMsg("NIK harus terdiri dari 16 digit angka jika diisi.");
         setIsLoading(false);
         return;
       }
 
-      if (!kk || kk.length < 16) {
-        alert("Validasi Gagal: Nomor KK tidak valid (minimal 16 digit)");
+      if (kk && (kk.length !== 16 || !/^\d{16}$/.test(kk))) {
+        setErrorMsg("Nomor KK harus terdiri dari 16 digit angka jika diisi.");
         setIsLoading(false);
         return;
       }
@@ -58,13 +60,16 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
       const result = await createDataUmat(formData);
       
       if (result.success) {
-        alert("Berhasil: Data Umat baru berhasil ditambahkan");
-        setOpen(false);
+        setSuccessMsg("Data Umat baru berhasil ditambahkan.");
+        setTimeout(() => {
+          setOpen(false);
+          setSuccessMsg(null);
+        }, 1000);
       } else {
-        alert("Gagal: " + (result.message || "Terjadi kesalahan"));
+        setErrorMsg(result.message || "Terjadi kesalahan saat menyimpan data.");
       }
     } catch (error) {
-      alert("Gagal: Terjadi kesalahan sistem");
+      setErrorMsg("Terjadi kesalahan sistem. Silakan coba beberapa saat lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +78,11 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
   return (
     <Dialog open={open} onOpenChange={(val) => {
       setOpen(val);
-      if (!val) setActiveTab("identitas");
+      if (!val) {
+        setActiveTab("identitas");
+        setErrorMsg(null);
+        setSuccessMsg(null);
+      }
     }}>
       <DialogTrigger asChild>
         <Button>
@@ -81,7 +90,7 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
           Tambah Umat
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[620px] max-h-[90vh] overflow-hidden flex flex-col">
         <form action={onSubmit} className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="px-6 py-4 border-b shrink-0">
             <DialogTitle>Tambah Data Umat Baru</DialogTitle>
@@ -89,6 +98,20 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
               Lengkapi informasi data umat secara detail.
             </DialogDescription>
           </DialogHeader>
+
+          {errorMsg && (
+            <div className="mx-6 mt-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2 shrink-0">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="mx-6 mt-4 p-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2 shrink-0">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+          )}
           
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -98,26 +121,32 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
                 <TabsTrigger value="tambahan">Tambahan</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="identitas" className="space-y-4 mt-0">
+              <TabsContent value="identitas" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="nama">Nama Lengkap *</Label>
-                    <Input id="nama" name="nama" required />
+                    <Input id="nama" name="nama" required placeholder="Nama lengkap sesuai KTP" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="namaBaptis">Nama Baptis</Label>
-                    <Input id="namaBaptis" name="namaBaptis" />
+                    <Input id="namaBaptis" name="namaBaptis" placeholder="Contoh: Francisca" />
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="nik">NIK (16 Digit) *</Label>
-                    <Input id="nik" name="nik" maxLength={16} required placeholder="Wajib diisi & dienkripsi" />
+                    <Label htmlFor="nik">
+                      NIK (16 Digit)
+                      <span className="text-xs text-muted-foreground font-normal ml-1">(Opsional)</span>
+                    </Label>
+                    <Input id="nik" name="nik" maxLength={16} placeholder="Kosongkan jika belum ada NIK" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="kk">Nomor KK (16 Digit) *</Label>
-                    <Input id="kk" name="kk" maxLength={16} required placeholder="Wajib diisi & dienkripsi" />
+                    <Label htmlFor="kk">
+                      Nomor KK (16 Digit)
+                      <span className="text-xs text-muted-foreground font-normal ml-1">(Opsional)</span>
+                    </Label>
+                    <Input id="kk" name="kk" maxLength={16} placeholder="Kosongkan jika belum ada KK" />
                   </div>
                 </div>
 
@@ -177,7 +206,7 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
                 </div>
               </TabsContent>
 
-              <TabsContent value="alamat" className="space-y-4 mt-0">
+              <TabsContent value="alamat" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
                 <div className="grid gap-2">
                   <Label htmlFor="alamat">Alamat Lengkap</Label>
                   <Input id="alamat" name="alamat" />
@@ -213,6 +242,7 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Milik Sendiri">Milik Sendiri</SelectItem>
+                      <SelectItem value="Milik Keluarga">Milik Keluarga</SelectItem>
                       <SelectItem value="Sewa/Kontrak">Sewa/Kontrak</SelectItem>
                       <SelectItem value="Menumpang">Menumpang</SelectItem>
                       <SelectItem value="Kosan">Kosan</SelectItem>
@@ -221,7 +251,7 @@ export function CreateUmatDialog({ lingkungans, userLingkunganId, isRestricted }
                 </div>
               </TabsContent>
 
-              <TabsContent value="tambahan" className="space-y-4 mt-0">
+              <TabsContent value="tambahan" forceMount className="space-y-4 mt-0 data-[state=inactive]:hidden">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="pekerjaan">Pekerjaan</Label>

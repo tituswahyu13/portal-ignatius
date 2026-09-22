@@ -117,6 +117,10 @@ export function CreateKpsDialog({
     setAutofillProfesi(u.profesi || "");
     setAutofillNik(u.nikMasked || "");
     setShowDropdown(false);
+
+    if (u.isKps) {
+      setError(`Umat yang Anda pilih (${u.nama}${u.namaBaptis ? ` (${u.namaBaptis})` : ""}) sudah pernah didaftarkan sebagai KPS sebelumnya. Silakan periksa daftar KPS atau gunakan tombol Edit jika ingin memperbarui data.`);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -153,9 +157,14 @@ export function CreateKpsDialog({
       <AlertDialog open={!!error} onOpenChange={(open) => { if (!open) setError(""); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Peringatan Pendaftaran</AlertDialogTitle>
-            <AlertDialogDescription className="text-red-600 font-medium">
-              {error}
+            <AlertDialogTitle className="text-amber-600 dark:text-amber-500">
+              Peringatan Pendaftaran
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground text-sm font-normal pt-1">
+              <span className="text-red-600 dark:text-red-400 font-semibold block mb-1">
+                {error}
+              </span>
+              Satu umat / keluarga hanya diperbolehkan memiliki satu data KPS terdaftar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -231,10 +240,24 @@ export function CreateKpsDialog({
                         filteredUmat.map(u => (
                           <div
                             key={u.id}
-                            className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+                            className={`px-3 py-2 text-sm flex items-center justify-between cursor-pointer hover:bg-muted ${
+                              u.isKps ? "bg-amber-500/10 text-amber-900 dark:text-amber-200" : ""
+                            }`}
                             onClick={() => handleSelectUmat(u)}
                           >
-                            {u.nama}
+                            <div className="flex items-center gap-1.5 overflow-hidden">
+                              <span className="font-medium truncate">{u.nama}</span>
+                              {u.namaBaptis && (
+                                <span className="text-xs text-muted-foreground shrink-0 font-normal">
+                                  ({u.namaBaptis})
+                                </span>
+                              )}
+                            </div>
+                            {u.isKps && (
+                              <span className="text-[10px] bg-amber-200 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold shrink-0 ml-2">
+                                Sudah KPS
+                              </span>
+                            )}
                           </div>
                         ))
                       ) : (
