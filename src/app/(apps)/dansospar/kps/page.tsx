@@ -74,6 +74,7 @@ export default async function KpsManagementPage({
         lingkungan={lingkungan}
         canWrite={canWrite}
         canDelete={canDelete}
+        restriction={restriction}
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash2, Eye } from "lucide-react";
+import { Trash2, Eye, Printer, Search as SearchIcon } from "lucide-react";
 import { deleteKpsAction } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { EditKpsDialog } from "./edit-kps-dialog";
@@ -11,26 +11,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search as SearchIcon } from "lucide-react";
 import { KpsAnalysis } from "./kps-analysis";
+import { exportSingleKpsPdf, exportKpsListPdf } from "./kps-pdf";
 
 export function KpsTable({ 
   kpsData, 
   lingkungan,
   canWrite = true,
-  canDelete = true
+  canDelete = true,
+  restriction
 }: { 
   kpsData: any[], 
   lingkungan: any[],
   canWrite?: boolean,
-  canDelete?: boolean
+  canDelete?: boolean,
+  restriction?: { restricted: boolean; lingkunganId?: number }
 }) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
+  const userLingkungan = restriction?.restricted 
+    ? lingkungan.find(l => l.id === restriction.lingkunganId)
+    : null;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [lingkunganId, setLingkunganId] = useState(searchParams.get("lingkunganId") || "ALL");
+  const [lingkunganId, setLingkunganId] = useState(
+    restriction?.restricted && restriction.lingkunganId
+      ? restriction.lingkunganId.toString()
+      : (searchParams.get("lingkunganId") || "ALL")
+  );
 
   const handleDelete = async (id: string) => {
     if (confirm("Apakah Anda yakin ingin menghapus data KPS ini?")) {
@@ -85,21 +95,52 @@ export function KpsTable({
             onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
           />
         </div>
-        <div className="w-full sm:w-[250px]">
-          <Select value={lingkunganId} onValueChange={setLingkunganId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Lingkungan" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Semua Lingkungan</SelectItem>
-              {lingkungan.map((ling) => (
-                <SelectItem key={ling.id} value={ling.id.toString()}>{ling.namaLingkungan}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {restriction?.restricted && userLingkungan ? (
+          <div className="w-full sm:w-[220px] px-3 py-2 border rounded-md bg-muted text-sm font-medium text-foreground flex items-center">
+            <span className="text-muted-foreground mr-1.5">Lingkungan:</span> {userLingkungan.namaLingkungan}
+          </div>
+        ) : (
+          <div className="w-full sm:w-[250px]">
+            <Select value={lingkunganId} onValueChange={setLingkunganId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua Lingkungan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Semua Lingkungan</SelectItem>
+                {lingkungan.map((ling) => (
+                  <SelectItem key={ling.id} value={ling.id.toString()}>{ling.namaLingkungan}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <Button onClick={handleFilter} className="w-full sm:w-auto">
           Filter
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            let targetLingkunganName = "Semua Lingkungan";
+            if (restriction?.restricted && userLingkungan) {
+              targetLingkunganName = userLingkungan.namaLingkungan;
+            } else if (lingkunganId && lingkunganId !== "ALL") {
+              const currentLing = lingkungan.find((l) => l.id.toString() === lingkunganId);
+              if (currentLing) targetLingkunganName = currentLing.namaLingkungan;
+            } else if (sortedData.length > 0 && sortedData.every(item => item.lingkunganId === sortedData[0]?.lingkunganId)) {
+              targetLingkunganName = sortedData[0]?.lingkungan?.namaLingkungan || "Semua Lingkungan";
+            }
+
+            exportKpsListPdf({
+              kpsList: sortedData,
+              lingkunganName: targetLingkunganName,
+              searchQuery: search
+            });
+          }}
+          className="w-full sm:w-auto"
+          title="Cetak Rekapitulasi Data KPS"
+        >
+          <Printer className="h-4 w-4 mr-1.5" />
+          Cetak Rekap
         </Button>
       </div>
 
@@ -120,7 +161,7 @@ export function KpsTable({
               </div>
             </TableHead>
             <TableHead>Total Skor</TableHead>
-            <TableHead className="text-center w-[120px]">Aksi</TableHead>
+            <TableHead className="text-center w-[200px]">Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -229,9 +270,29 @@ export function KpsTable({
                         <div className="pt-4 border-t">
                           <KpsAnalysis kps={item} />
                         </div>
+                        <div className="pt-2 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => exportSingleKpsPdf(item)}
+                            className="w-full sm:w-auto"
+                          >
+                            <Printer className="h-4 w-4 mr-1.5" />
+                            Cetak Lembar Evaluasi (PDF)
+                          </Button>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => exportSingleKpsPdf(item)}
+                    title="Cetak Lembar Evaluasi KPS"
+                  >
+                    <Printer className="h-4 w-4 mr-1" />
+                    Cetak
+                  </Button>
                   {canWrite && <EditKpsDialog kps={item} lingkungan={lingkungan} />}
                   {canDelete && (
                     <Button 
