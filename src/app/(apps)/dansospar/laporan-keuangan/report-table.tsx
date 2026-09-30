@@ -16,10 +16,12 @@ import * as XLSX from "xlsx";
 
 export function ReportTable({ 
   mutations, 
-  accounts 
+  accounts,
+  isGuest = false
 }: { 
   mutations: any[];
   accounts: any[];
+  isGuest?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -204,16 +206,18 @@ export function ReportTable({
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={exportToPdf} disabled={mutations.length === 0} className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
-          <FileText className="h-4 w-4 mr-2" />
-          PDF
-        </Button>
-        <Button variant="outline" onClick={exportToExcel} disabled={mutations.length === 0} className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700">
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          Excel
-        </Button>
-      </div>
+      {!isGuest && (
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={exportToPdf} disabled={mutations.length === 0} className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
+            <FileText className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+          <Button variant="outline" onClick={exportToExcel} disabled={mutations.length === 0} className="border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+        </div>
+      )}
 
       {/* Table Section */}
       <div className="rounded-md border bg-card">

@@ -3,10 +3,19 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { encryptString, decryptString } from "@/lib/encryption";
-import { getLingkunganRestriction } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 
 export async function getSemuaDataUmat() {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return [];
+    }
+    const allowed = await hasPermission("DATAUMAT_MANAGE");
+    if (!allowed) {
+      return [];
+    }
+
     const restriction = await getLingkunganRestriction();
     const whereClause: any = restriction.restricted
       ? { lingkunganId: restriction.lingkunganId }
@@ -62,6 +71,15 @@ export async function getSemuaDataUmat() {
 
 export async function createDataUmat(formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, message: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("DATAUMAT_MANAGE");
+    if (!allowed) {
+      return { success: false, message: "Akses ditolak: Anda tidak memiliki izin untuk menambah data umat." };
+    }
+
     const nama = formData.get("nama") as string;
     const lingkunganIdStr = formData.get("lingkunganId") as string;
     const nik = (formData.get("nik") as string || "").trim();
@@ -132,6 +150,15 @@ export async function createDataUmat(formData: FormData) {
 
 export async function updateDataUmat(id: string, formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, message: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("DATAUMAT_MANAGE");
+    if (!allowed) {
+      return { success: false, message: "Akses ditolak: Anda tidak memiliki izin untuk mengubah data umat." };
+    }
+
     const umat = await prisma.dataUmat.findUnique({ where: { id: BigInt(id) } });
     if (!umat) return { success: false, message: "Data tidak ditemukan." };
 
@@ -227,6 +254,15 @@ export async function updateDataUmat(id: string, formData: FormData) {
 
 export async function deleteDataUmat(id: string) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, message: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("DATAUMAT_MANAGE");
+    if (!allowed) {
+      return { success: false, message: "Akses ditolak: Anda tidak memiliki izin untuk menghapus data umat." };
+    }
+
     const umat = await prisma.dataUmat.findUnique({ where: { id: BigInt(id) } });
     if (!umat) return { success: false, message: "Data tidak ditemukan." };
 

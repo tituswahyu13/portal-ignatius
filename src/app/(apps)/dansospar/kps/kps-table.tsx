@@ -19,13 +19,15 @@ export function KpsTable({
   lingkungan,
   canWrite = true,
   canDelete = true,
-  restriction
+  restriction,
+  isGuest = false
 }: { 
   kpsData: any[], 
   lingkungan: any[],
   canWrite?: boolean,
   canDelete?: boolean,
-  restriction?: { restricted: boolean; lingkunganId?: number }
+  restriction?: { restricted: boolean; lingkunganId?: number },
+  isGuest?: boolean
 }) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   
@@ -117,31 +119,33 @@ export function KpsTable({
         <Button onClick={handleFilter} className="w-full sm:w-auto">
           Filter
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            let targetLingkunganName = "Semua Lingkungan";
-            if (restriction?.restricted && userLingkungan) {
-              targetLingkunganName = userLingkungan.namaLingkungan;
-            } else if (lingkunganId && lingkunganId !== "ALL") {
-              const currentLing = lingkungan.find((l) => l.id.toString() === lingkunganId);
-              if (currentLing) targetLingkunganName = currentLing.namaLingkungan;
-            } else if (sortedData.length > 0 && sortedData.every(item => item.lingkunganId === sortedData[0]?.lingkunganId)) {
-              targetLingkunganName = sortedData[0]?.lingkungan?.namaLingkungan || "Semua Lingkungan";
-            }
+        {!isGuest && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              let targetLingkunganName = "Semua Lingkungan";
+              if (restriction?.restricted && userLingkungan) {
+                targetLingkunganName = userLingkungan.namaLingkungan;
+              } else if (lingkunganId && lingkunganId !== "ALL") {
+                const currentLing = lingkungan.find((l) => l.id.toString() === lingkunganId);
+                if (currentLing) targetLingkunganName = currentLing.namaLingkungan;
+              } else if (sortedData.length > 0 && sortedData.every(item => item.lingkunganId === sortedData[0]?.lingkunganId)) {
+                targetLingkunganName = sortedData[0]?.lingkungan?.namaLingkungan || "Semua Lingkungan";
+              }
 
-            exportKpsListPdf({
-              kpsList: sortedData,
-              lingkunganName: targetLingkunganName,
-              searchQuery: search
-            });
-          }}
-          className="w-full sm:w-auto"
-          title="Cetak Rekapitulasi Data KPS"
-        >
-          <Printer className="h-4 w-4 mr-1.5" />
-          Cetak Rekap
-        </Button>
+              exportKpsListPdf({
+                kpsList: sortedData,
+                lingkunganName: targetLingkunganName,
+                searchQuery: search
+              });
+            }}
+            className="w-full sm:w-auto"
+            title="Cetak Rekapitulasi Data KPS"
+          >
+            <Printer className="h-4 w-4 mr-1.5" />
+            Cetak Rekap
+          </Button>
+        )}
       </div>
 
       <div className="border rounded-md">
@@ -150,7 +154,7 @@ export function KpsTable({
           <TableRow>
             <TableHead>Lingkungan</TableHead>
             <TableHead>Kepala Keluarga</TableHead>
-            <TableHead>NIK (Tersensor)</TableHead>
+            {!isGuest && <TableHead>NIK (Tersensor)</TableHead>}
             <TableHead 
               className="cursor-pointer hover:bg-muted/50 transition-colors" 
               onClick={handleSort}
@@ -169,9 +173,13 @@ export function KpsTable({
             <TableRow key={item.id}>
               <TableCell className="font-medium">{item.lingkungan?.namaLingkungan || "Tidak diketahui"}</TableCell>
               <TableCell>{item.umat?.nama || "Tidak diketahui"}</TableCell>
-              <TableCell>
-                <code className="text-xs bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</code>
-              </TableCell>
+              {!isGuest && (
+                <TableCell>
+                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                    {item.nikDecryptedMasked || "-"}
+                  </code>
+                </TableCell>
+              )}
               <TableCell>
                 {item.statusKeluarga === "Prasejahtera" ? (
                   <Badge variant="destructive">Prasejahtera ({item.persentaseKelayakan}%)</Badge>
@@ -204,18 +212,22 @@ export function KpsTable({
                           <span className="font-semibold text-muted-foreground">Kepala Keluarga</span>
                           <span className="col-span-2 font-medium">{item.umat?.nama || "-"}</span>
                         </div>
-                        <div className="grid grid-cols-3 border-b pb-2">
-                          <span className="font-semibold text-muted-foreground">NIK</span>
-                          <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</span>
-                        </div>
-                        <div className="grid grid-cols-3 border-b pb-2">
-                          <span className="font-semibold text-muted-foreground">No. KK</span>
-                          <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.kkDecryptedMasked}</span>
-                        </div>
-                        <div className="grid grid-cols-3 border-b pb-2">
-                          <span className="font-semibold text-muted-foreground">No. HP</span>
-                          <span className="col-span-2 font-medium">{item.umat?.noHp || "-"}</span>
-                        </div>
+                        {!isGuest && (
+                          <>
+                            <div className="grid grid-cols-3 border-b pb-2">
+                              <span className="font-semibold text-muted-foreground">NIK</span>
+                              <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.nikDecryptedMasked}</span>
+                            </div>
+                            <div className="grid grid-cols-3 border-b pb-2">
+                              <span className="font-semibold text-muted-foreground">No. KK</span>
+                              <span className="col-span-2 font-mono bg-muted px-1 py-0.5 rounded">{item.kkDecryptedMasked}</span>
+                            </div>
+                            <div className="grid grid-cols-3 border-b pb-2">
+                              <span className="font-semibold text-muted-foreground">No. HP</span>
+                              <span className="col-span-2 font-medium">{item.umat?.noHp || "-"}</span>
+                            </div>
+                          </>
+                        )}
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Pekerjaan</span>
                           <span className="col-span-2 font-medium">{item.umat?.pekerjaan || "-"}</span>
@@ -235,10 +247,12 @@ export function KpsTable({
                             })() : "-"}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 border-b pb-2">
-                          <span className="font-semibold text-muted-foreground">Alamat</span>
-                          <span className="col-span-2 font-medium">{item.umat?.alamat || "-"}</span>
-                        </div>
+                        {!isGuest && (
+                          <div className="grid grid-cols-3 border-b pb-2">
+                            <span className="font-semibold text-muted-foreground">Alamat</span>
+                            <span className="col-span-2 font-medium">{item.umat?.alamat || "-"}</span>
+                          </div>
+                        )}
                         <div className="grid grid-cols-3 border-b pb-2">
                           <span className="font-semibold text-muted-foreground">Dibuat</span>
                           <span className="col-span-2 font-medium text-xs flex items-center">
@@ -270,29 +284,33 @@ export function KpsTable({
                         <div className="pt-4 border-t">
                           <KpsAnalysis kps={item} />
                         </div>
-                        <div className="pt-2 flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => exportSingleKpsPdf(item)}
-                            className="w-full sm:w-auto"
-                          >
-                            <Printer className="h-4 w-4 mr-1.5" />
-                            Cetak Lembar Evaluasi (PDF)
-                          </Button>
-                        </div>
+                        {!isGuest && (
+                          <div className="pt-2 flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => exportSingleKpsPdf(item)}
+                              className="w-full sm:w-auto"
+                            >
+                              <Printer className="h-4 w-4 mr-1.5" />
+                              Cetak Lembar Evaluasi (PDF)
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => exportSingleKpsPdf(item)}
-                    title="Cetak Lembar Evaluasi KPS"
-                  >
-                    <Printer className="h-4 w-4 mr-1" />
-                    Cetak
-                  </Button>
+                  {!isGuest && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => exportSingleKpsPdf(item)}
+                      title="Cetak Lembar Evaluasi KPS"
+                    >
+                      <Printer className="h-4 w-4 mr-1" />
+                      Cetak
+                    </Button>
+                  )}
                   {canWrite && <EditKpsDialog kps={item} lingkungan={lingkungan} />}
                   {canDelete && (
                     <Button 

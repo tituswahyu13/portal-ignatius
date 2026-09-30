@@ -3,7 +3,7 @@
 import { db as prisma } from "@/lib/db";
 import { encryptString, decryptString } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
-import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 
 export async function searchDataUmat(query: string, lingkunganId?: number) {
   try {
@@ -81,6 +81,15 @@ export async function getUmatByLingkungan(lingkunganId: number) {
 
 export async function createKpsAction(formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("KPS_CREATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menambah data KPS." };
+    }
+
     const umatId = formData.get("umatId") as string;
     const nik = formData.get("nik") as string; // Optional (update ke DataUmat jika diisi)
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
@@ -225,8 +234,6 @@ export async function createKpsAction(formData: FormData) {
       });
     }
 
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     // Jika sebelumnya ada data KPS yang pernah dihapus (soft delete), reaktivasi dengan skor baru
     if (existingKps && existingKps.deletedAt) {
@@ -359,6 +366,15 @@ export async function getKpsData(searchQuery?: string, lingkunganId?: string) {
 
 export async function updateKpsAction(id: string, formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("KPS_UPDATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin mengubah data KPS." };
+    }
+
     const umatId = formData.get("umatId") as string;
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     
@@ -449,8 +465,6 @@ export async function updateKpsAction(id: string, formData: FormData) {
       statusKeluarga
     };
 
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     // Update umat linked just in case it changed
     dataToUpdate.umatId = BigInt(umatId);
@@ -470,6 +484,15 @@ export async function updateKpsAction(id: string, formData: FormData) {
 
 export async function deleteKpsAction(id: string) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("KPS_DELETE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menghapus data KPS." };
+    }
+
     const restriction = await getLingkunganRestriction();
     if (restriction.restricted) {
       const existing = await prisma.kpsData.findUnique({ where: { id: BigInt(id) } });
@@ -477,9 +500,6 @@ export async function deleteKpsAction(id: string) {
         return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
       }
     }
-
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     await prisma.kpsData.softDelete({ id: BigInt(id) }, user.id);
     revalidatePath("/dansospar/kps");

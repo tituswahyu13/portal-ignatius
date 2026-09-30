@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 
 // Kita menginisialisasi client Supabase khusus dengan SERVICE ROLE KEY
 // Ini memungkinkan kita menggunakan API admin untuk membuat user tanpa perlu login/sesi.
@@ -17,8 +18,25 @@ const supabaseAdmin = createClient(
   }
 );
 
+async function checkManageUserPermission(requiredPermission: string = "USERS_UPDATE") {
+  const user = await getCurrentUser();
+  if (!user || (user as any).isGuest) {
+    return { authorized: false, error: "Akses ditolak: Anda harus login dengan akun administrator." };
+  }
+  const allowed = await hasPermission(requiredPermission);
+  if (!allowed) {
+    return { authorized: false, error: "Akses ditolak: Anda tidak memiliki hak akses untuk tindakan ini." };
+  }
+  return { authorized: true, user };
+}
+
 export async function createUserAction(formData: any) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_CREATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     const { name, email, password, phoneNumber, roleId, lingkunganId } = formData;
 
     // 1. Buat user di Supabase Auth
@@ -57,25 +75,30 @@ export async function createUserAction(formData: any) {
     return { success: true, data: { id: newUser.id.toString(), email: newUser.email } };
   } catch (error: any) {
     console.error("Prisma Error:", error);
-    return { success: false, error: error.message || "Gagal mengubah profil pengguna" };
+    return { success: false, error: error.message || "Gagal membuat pengguna" };
   }
 }
 
 export async function toggleUserActiveStatus(userId: string, isActive: boolean) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_UPDATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     await prisma.user.update({
       where: { id: BigInt(userId) },
       data: { isActive },
     });
 
-    // Also insert audit log if possible (AuditLog model was just added)
-    // Note: in a real app you might want to know who did this, for now we leave userId as null (System)
+    // Also insert audit log
     await prisma.auditLog.create({
       data: {
         action: isActive ? "ACTIVATE_USER" : "DEACTIVATE_USER",
         entity: "User",
         entityId: userId,
-        details: `User ${userId} status changed to ${isActive}`,
+        userId: authCheck.user!.id.toString(),
+        details: `Status user ${userId} diubah menjadi ${isActive ? 'Aktif' : 'Non-aktif'} oleh ${authCheck.user!.name}`,
       }
     });
 
@@ -89,6 +112,11 @@ export async function toggleUserActiveStatus(userId: string, isActive: boolean) 
 
 export async function updateUserAction(id: string, formData: any) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_UPDATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     const { name, phoneNumber, roleId, lingkunganId, isActive } = formData;
     
     // Update data profil dan hapus relasi role lama, ganti yang baru
@@ -118,6 +146,11 @@ export async function updateUserAction(id: string, formData: any) {
 
 export async function softDeleteUserAction(id: string, email: string) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_DELETE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     // 1. Matikan status di Prisma
     await prisma.user.update({
       where: { id: BigInt(id) },
@@ -129,8 +162,7 @@ export async function softDeleteUserAction(id: string, email: string) {
     if (!listError && usersData?.users) {
       const targetUser = usersData.users.find(u => u.email === email);
       if (targetUser) {
-        // Hapus akun dari Auth supaya tidak bisa login lagi,
-        // Tapi data di Prisma tetap utuh untuk historis dokumen
+        // Hapus akun dari Auth supaya tidak bisa login lagi
         await supabaseAdmin.auth.admin.deleteUser(targetUser.id);
       }
     }
@@ -145,6 +177,11 @@ export async function softDeleteUserAction(id: string, email: string) {
 
 export async function toggleRolePermissionAction(roleId: number, permissionId: number, isGranted: boolean) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_UPDATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     if (isGranted) {
       await prisma.rolePermission.upsert({
         where: {
@@ -169,6 +206,11 @@ export async function toggleRolePermissionAction(roleId: number, permissionId: n
 
 export async function bulkUpdatePermissions(changes: { roleId: number, permissionId: number, isGranted: boolean }[]) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_UPDATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     for (const change of changes) {
       if (change.isGranted) {
         await prisma.rolePermission.upsert({
@@ -189,12 +231,12 @@ export async function bulkUpdatePermissions(changes: { roleId: number, permissio
           action: change.isGranted ? "GRANT_PERMISSION" : "REVOKE_PERMISSION",
           entity: "RolePermission",
           entityId: `${change.roleId}-${change.permissionId}`,
+          userId: authCheck.user!.id.toString(),
           details: `Permission ${change.permissionId} ${change.isGranted ? 'granted to' : 'revoked from'} Role ${change.roleId}`
         }
       });
     }
 
-    // Attempt to notify affected users (for now, just roles)
     // Find users who have the affected roles
     const affectedRoleIds = Array.from(new Set(changes.map(c => c.roleId)));
     const affectedUsers = await prisma.userRole.findMany({
@@ -208,7 +250,6 @@ export async function bulkUpdatePermissions(changes: { roleId: number, permissio
     }));
 
     if (notifications.length > 0) {
-      // In a real app we might deduplicate this by userId
       await prisma.notification.createMany({
         data: notifications
       });
@@ -224,6 +265,11 @@ export async function bulkUpdatePermissions(changes: { roleId: number, permissio
 
 export async function resetUserPassword(email: string, newPassword: string) {
   try {
+    const authCheck = await checkManageUserPermission("USERS_UPDATE");
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error };
+    }
+
     const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     if (listError || !usersData?.users) {
       return { success: false, error: "Gagal memuat pengguna dari sistem autentikasi." };
@@ -251,7 +297,8 @@ export async function resetUserPassword(email: string, newPassword: string) {
           action: "RESET_PASSWORD",
           entity: "User",
           entityId: userInDb.id.toString(),
-          details: `Administrator mereset password untuk akun ${email}`,
+          userId: authCheck.user!.id.toString(),
+          details: `Administrator (${authCheck.user!.name}) mereset password untuk akun ${email}`,
         }
       });
     }

@@ -2,7 +2,7 @@ import { getLingkungan } from "@/lib/data/users";
 import { getKpsData } from "./actions";
 import { CreateKpsDialog } from "./create-kps-dialog";
 import { KpsTable } from "./kps-table";
-import { hasPermission, getLingkunganRestriction } from "@/lib/auth/permissions";
+import { hasPermission, getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
 import { Unauthorized } from "@/components/unauthorized";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,9 @@ export default async function KpsManagementPage({
 }: {
   searchParams: { [key: string]: string | undefined }
 }) {
+  const user = await getCurrentUser();
+  const isGuest = !!(user as any)?.isGuest;
+
   const allowed = await hasPermission("KPS_READ");
   if (!allowed) {
     return <Unauthorized />;
@@ -33,10 +36,12 @@ export default async function KpsManagementPage({
             Kelola data Keluarga Pra-Sejahtera (KPS). Data KTP dan KK dienkripsi secara aman.
           </p>
         </div>
-        <CreateKpsDialog 
-          lingkungan={lingkungan} 
-          restriction={restriction}
-        />
+        {canWrite && (
+          <CreateKpsDialog 
+            lingkungan={lingkungan} 
+            restriction={restriction}
+          />
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-8">
@@ -75,6 +80,7 @@ export default async function KpsManagementPage({
         canWrite={canWrite}
         canDelete={canDelete}
         restriction={restriction}
+        isGuest={isGuest}
       />
     </div>
   );

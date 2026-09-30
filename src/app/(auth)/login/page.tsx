@@ -1,7 +1,8 @@
-import { loginWithEmail, loginWithGoogle } from "./actions";
+import { loginWithEmail, loginWithGoogle, loginAsGuest } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Eye } from "lucide-react";
 
 export default function LoginPage({
   searchParams,
@@ -9,7 +10,7 @@ export default function LoginPage({
   searchParams: { error?: string };
 }) {
   return (
-    <div className="mx-auto mt-20 w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
+    <div className="mx-auto mt-16 w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Portal Ignatius
@@ -73,6 +74,29 @@ export default function LoginPage({
           </svg>
           Lanjutkan dengan Google
         </Button>
+      </form>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">Akses Umat / Publik</span>
+        </div>
+      </div>
+
+      <form action={loginAsGuest}>
+        <Button 
+          type="submit" 
+          variant="secondary" 
+          className="w-full border-2 border-primary/20 hover:border-primary/50 font-medium text-foreground py-5 flex items-center justify-center gap-2"
+        >
+          <Eye className="h-4 w-4 text-primary" />
+          Masuk sebagai Tamu (Pantau Transparansi & KPS)
+        </Button>
+        <p className="text-[11px] text-center text-muted-foreground mt-2">
+          Akses terbuka bagi umat untuk memantau data KPS, UMKM, dan Laporan Keuangan Paroki.
+        </p>
       </form>
     </div>
   );

@@ -3,11 +3,20 @@
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { encryptString, decryptString } from "@/lib/encryption";
-import { getLingkunganRestriction, getCurrentUser } from "@/lib/auth/permissions";
+import { getLingkunganRestriction, getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 import { uploadFileToDrive } from "@/lib/gdrive";
 
 export async function createUmkmAction(formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("UMKM_CREATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menambah data UMKM." };
+    }
+
     const umatId = formData.get("umatId") as string;
     const namaUsaha = formData.get("namaUsaha") as string;
     const jenisUsaha = formData.get("jenisUsaha") as string;
@@ -73,8 +82,6 @@ export async function createUmkmAction(formData: FormData) {
       }
     }
 
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     // --- UPLOAD KE GOOGLE DRIVE (Opsional) ---
     let googleDriveFileId = null;
@@ -188,6 +195,15 @@ export async function getUmkmData(searchQuery?: string, lingkunganId?: string) {
 
 export async function updateUmkmAction(id: string, formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("UMKM_UPDATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin mengubah data UMKM." };
+    }
+
     const umatId = formData.get("umatId") as string;
     const namaUsaha = formData.get("namaUsaha") as string;
     const jenisUsaha = formData.get("jenisUsaha") as string;
@@ -264,8 +280,6 @@ export async function updateUmkmAction(id: string, formData: FormData) {
       }
     }
 
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     let googleDriveFileId: string | null | undefined = undefined;
     const file = formData.get("lampiran") as File | null;
@@ -320,6 +334,15 @@ export async function updateUmkmAction(id: string, formData: FormData) {
 
 export async function deleteUmkmAction(id: string) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("UMKM_DELETE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menghapus data UMKM." };
+    }
+
     const restriction = await getLingkunganRestriction();
     if (restriction.restricted) {
       const existing = await prisma.umkmData.findUnique({ where: { id: BigInt(id) } });
@@ -327,9 +350,6 @@ export async function deleteUmkmAction(id: string) {
         return { success: false, error: "Akses ditolak: Anda tidak memiliki akses ke data ini." };
       }
     }
-
-    const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Unauthorized" };
 
     await prisma.umkmData.softDelete({ id: BigInt(id) }, user.id);
     revalidatePath("/dansospar/umkm");

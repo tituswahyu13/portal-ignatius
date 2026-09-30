@@ -46,6 +46,15 @@ export async function getSubjekByLingkungan(lingkunganId: number, type: "KPS" | 
 
 export async function createSpbAction(formData: FormData) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || (currentUser as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("SPB_CREATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin membuat pengajuan SPB." };
+    }
+
     const lingkunganId = parseInt(formData.get("lingkunganId") as string);
     const intensiId = parseInt(formData.get("intensiId") as string);
     const subjekType = formData.get("subjekType") as "KPS" | "UMKM";
@@ -107,11 +116,6 @@ export async function createSpbAction(formData: FormData) {
     const currentYear = new Date().getFullYear();
     const nomorSpb = `${prefix}/${currentYear}/${(countSpb + 1).toString().padStart(4, '0')}`;
 
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return { success: false, error: "Sesi tidak valid. Harap login kembali." };
-    }
 
     // Save SPB to Database with transaction
     await prisma.$transaction(async (tx) => {
@@ -161,6 +165,11 @@ export async function updateSpbStatusAction(
   payload?: { danaApproved?: number, rekomendasi?: boolean, rejectionReason?: string }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || (currentUser as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+
     const spb = await prisma.spbRequest.findUnique({
       where: { id: spbId }
     });
@@ -169,10 +178,6 @@ export async function updateSpbStatusAction(
       return { success: false, error: "SPB tidak ditemukan" };
     }
 
-    // Restriction check: SPB realization or status update
-    // If restricted, they can't update status of other lingkungan's SPB, 
-    // BUT typically restricted users shouldn't be updating status (approval) anyway! 
-    // So this is a defense-in-depth measure.
     const restriction = await getLingkunganRestriction();
     if (restriction.restricted && spb.lingkunganId !== restriction.lingkunganId) {
       return { success: false, error: "Akses ditolak: SPB ini bukan milik Lingkungan Anda." };
@@ -181,22 +186,23 @@ export async function updateSpbStatusAction(
     // Role Permission Check
     let allowed = false;
     if (newStatus === "REJECTED") {
-       // Anyone in the approval chain can reject if it's currently at their stage, simplified:
-       allowed = true; // Ideally we should check if they can approve the CURRENT stage
+      const canReject = (await hasPermission("REVIEW_SPB_PIC")) || 
+                        (await hasPermission("APPROVE_SPB_TPDSP")) || 
+                        (await hasPermission("APPROVE_SPB_PASTOR")) || 
+                        (await hasPermission("REALIZE_SPB"));
+      allowed = canReject;
     } else if (newStatus === "REVIEW_PIC" && await hasPermission("REVIEW_SPB_PIC")) allowed = true;
     else if (newStatus === "APPROVED_TPDSP" && await hasPermission("APPROVE_SPB_TPDSP")) allowed = true;
     else if (newStatus === "APPROVED_PASTOR" && await hasPermission("APPROVE_SPB_PASTOR")) allowed = true;
     else if (newStatus === "REALIZED" && await hasPermission("REALIZE_SPB")) allowed = true;
     
-    if (!allowed && newStatus !== "REJECTED") {
+    if (!allowed) {
       return { success: false, error: "Akses ditolak: Anda tidak memiliki wewenang untuk tindakan ini." };
     }
 
     if (spb.status === "REALIZED") {
       return { success: false, error: "SPB sudah direalisasikan dan tidak dapat diubah" };
     }
-
-    const currentUser = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       const updateData: any = { status: newStatus as any };
@@ -255,6 +261,15 @@ export async function updateSpbStatusAction(
 // Edit SPB
 export async function editSpbAction(spbId: bigint, formData: FormData) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || (currentUser as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("SPB_UPDATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin mengubah SPB." };
+    }
+
     const spb = await prisma.spbRequest.findUnique({ where: { id: spbId } });
     if (!spb) return { success: false, error: "SPB tidak ditemukan" };
     if (spb.status !== "SUBMITTED") return { success: false, error: "Hanya SPB yang masih dalam status Diajukan yang dapat diubah" };
@@ -295,8 +310,6 @@ export async function editSpbAction(spbId: bigint, formData: FormData) {
       fileType = file.type || "application/octet-stream";
     }
 
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return { success: false, error: "Unauthorized" };
 
     await prisma.$transaction(async (tx) => {
       await tx.spbRequest.safeUpdate({
@@ -339,6 +352,15 @@ export async function editSpbAction(spbId: bigint, formData: FormData) {
 // Delete SPB
 export async function deleteSpbAction(spbId: bigint) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || (currentUser as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("SPB_DELETE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menghapus SPB." };
+    }
+
     const spb = await prisma.spbRequest.findUnique({ where: { id: spbId } });
     if (!spb) return { success: false, error: "SPB tidak ditemukan" };
     if (spb.status !== "SUBMITTED") return { success: false, error: "Hanya SPB yang masih dalam status Diajukan yang dapat dihapus" };
@@ -347,9 +369,6 @@ export async function deleteSpbAction(spbId: bigint) {
     if (restriction.restricted && restriction.lingkunganId !== spb.lingkunganId) {
       return { success: false, error: "Akses ditolak" };
     }
-
-    const currentUser = await getCurrentUser();
-    if (!currentUser) return { success: false, error: "Unauthorized" };
 
     await prisma.spbRequest.softDelete({ id: spbId }, currentUser.id);
 

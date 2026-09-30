@@ -31,19 +31,36 @@ export async function updateSession(request: NextRequest) {
 
   // Check the session
   const { data: { user } } = await supabase.auth.getUser();
+  const isGuest = request.cookies.get("ignatius_guest_session")?.value === "true";
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/auth/callback');
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
 
-  if (!user && !isAuthPage && !isApiRoute) {
-    // If not logged in and not on login page, redirect to login
+  if (!user && !isGuest && !isAuthPage && !isApiRoute) {
+    // If not logged in and not guest, redirect to login
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthPage) {
-    // If logged in and on login page, redirect to home
+  // Guard: Guest cannot access sensitive admin routes
+  if (isGuest && !user) {
+    const restrictedForGuest = [
+      '/usermanagement',
+      '/dataumat',
+      '/dansospar/spb/inbox',
+      '/dansospar/spb/rutin',
+      '/dansospar/keuangan',
+    ];
+    if (restrictedForGuest.some(path => request.nextUrl.pathname.startsWith(path))) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dansospar';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if ((user || isGuest) && isAuthPage) {
+    // If logged in or guest and on login page, redirect to home
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);

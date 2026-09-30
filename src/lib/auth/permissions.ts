@@ -19,9 +19,36 @@ export const getCurrentUser = cache(async () => {
     }
   );
 
+  const isGuest = cookieStore.get("ignatius_guest_session")?.value === "true";
+
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
   if (!authUser?.email) {
+    if (isGuest) {
+      return {
+        id: "guest",
+        name: "Tamu (Umat Paroki)",
+        email: "tamu@portal-ignatius.id",
+        phoneNumber: "-",
+        isActive: true,
+        lingkunganId: null,
+        isGuest: true,
+        userRoles: [
+          {
+            role: {
+              name: "GUEST",
+              description: "Tamu / Umat Umum (Read-Only Transparansi)",
+              rolePermissions: [
+                { permission: { name: "VIEW_DANSOSPAR_DASHBOARD", appModule: "DANSOSPAR" } },
+                { permission: { name: "KPS_READ", appModule: "DANSOSPAR" } },
+                { permission: { name: "LAPORAN_KEUANGAN_READ", appModule: "DANSOSPAR" } },
+                { permission: { name: "UMKM_READ", appModule: "DANSOSPAR" } },
+              ]
+            }
+          }
+        ]
+      } as any;
+    }
     return null;
   }
 
@@ -87,6 +114,11 @@ export const hasModuleAccess = async (moduleName: string) => {
 export const getLingkunganRestriction = async () => {
   const user = await getCurrentUser();
   if (!user || !user.isActive) return { restricted: true, lingkunganId: -1 };
+
+  if ((user as any).isGuest) {
+    // Tamu dapat memantau data di seluruh lingkungan untuk transparansi
+    return { restricted: false, lingkunganId: 0 };
+  }
 
   // Roles that have global view access
   const globalRoles = ["SUPER_ADMIN", "Ketua PSE", "Ketua Dansospar", "Sekretaris Dansospar", "Bendahara Dansospar", "Pastor"];

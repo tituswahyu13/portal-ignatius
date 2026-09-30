@@ -2,7 +2,7 @@ import { getIntensiAccounts, getLaporanKeuangan } from "./actions";
 import { ReportTable } from "./report-table";
 import { formatRupiah } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
-
+import { getCurrentUser } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,8 @@ export default async function LaporanKeuanganPage({
 }: {
   searchParams: { [key: string]: string | undefined }
 }) {
-  // Laporan keuangan dibuat transparan sehingga semua pengguna dapat melihatnya
+  const user = await getCurrentUser();
+  const isGuest = !!(user as any)?.isGuest;
 
 
   const accounts = await getIntensiAccounts();
@@ -80,7 +81,7 @@ export default async function LaporanKeuanganPage({
         </div>
       </div>
 
-      <ReportTable accounts={accounts} mutations={mutations} />
+      <ReportTable accounts={accounts} mutations={mutations} isGuest={isGuest} />
     </div>
   );
 }

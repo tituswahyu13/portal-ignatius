@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { db as prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const start = Date.now();
-    const count = await prisma.user.count();
-    const time = Date.now() - start;
-    return NextResponse.json({ status: "success", count, timeMs: time });
+    await prisma.$queryRaw`SELECT 1`;
+    const timeMs = Date.now() - start;
+    return NextResponse.json({ status: "ok", timeMs });
   } catch (error: any) {
-    return NextResponse.json({ status: "error", message: error.message, stack: error.stack }, { status: 500 });
+    console.error("[HEALTH_CHECK_ERROR]", error);
+    return NextResponse.json({ status: "unhealthy" }, { status: 500 });
   }
 }

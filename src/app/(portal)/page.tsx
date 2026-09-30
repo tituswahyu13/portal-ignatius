@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { hasModuleAccess } from "@/lib/auth/permissions";
-import { Users, Wallet, UsersRound, Landmark } from "lucide-react";
+import { hasModuleAccess, getCurrentUser } from "@/lib/auth/permissions";
+import { Users, Wallet, UsersRound, Landmark, Eye } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 export const dynamic = "force-dynamic";
 
 export default async function PortalPage() {
+  const user = await getCurrentUser();
+  const isGuest = !!(user as any)?.isGuest;
+
   const canAccessGlobal = await hasModuleAccess("GLOBAL");
   const canAccessDansospar = await hasModuleAccess("DANSOSPAR");
 
@@ -34,7 +37,9 @@ export default async function PortalPage() {
       ? [
           {
             name: "Dana Sosial Paroki",
-            description: "Pengelolaan dana sosial, SPB, dan realisasi.",
+            description: isGuest 
+              ? "Pantau data KPS, UMKM, dan Laporan Keuangan secara transparan." 
+              : "Pengelolaan dana sosial, SPB, dan realisasi.",
             href: "/dansospar",
             icon: Wallet,
           },
@@ -60,10 +65,23 @@ export default async function PortalPage() {
   ];
   return (
     <div className="container py-10">
+      {isGuest && (
+        <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-3">
+          <Eye className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div>
+            <h3 className="text-sm font-semibold text-primary">Mode Tamu (Transparansi Umat)</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Anda masuk sebagai Umat / Tamu. Anda dapat memantau data Keluarga Pra-Sejahtera (KPS), UMKM, dan Laporan Keuangan DanSosPar secara terbuka (Read-Only).
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight">Selamat Datang</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Selamat Datang{isGuest ? ", Tamu Umat Paroki" : ""}</h2>
         <p className="mt-2 text-muted-foreground">
-          Pilih aplikasi yang ingin Anda akses.
+          {isGuest 
+            ? "Pilih aplikasi Dana Sosial Paroki untuk mulai memantau transparansi data."
+            : "Pilih aplikasi yang ingin Anda akses."}
         </p>
       </div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

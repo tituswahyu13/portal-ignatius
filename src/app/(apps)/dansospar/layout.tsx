@@ -7,8 +7,9 @@ import { SpbStatus } from "@prisma/client";
 export default async function DanSosParLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   const userName = user?.name || "Pengguna";
-  const roleName = user?.userRoles?.[0]?.role?.name || "User";
-  const initials = userName.substring(0, 2).toUpperCase();
+  const isGuest = !!(user as any)?.isGuest;
+  const roleName = isGuest ? "Mode Transparansi" : (user?.userRoles?.[0]?.role?.name || "User");
+  const initials = isGuest ? "TM" : userName.substring(0, 2).toUpperCase();
   const canReadKps = await hasPermission("KPS_READ");
   const canReadUmkm = await hasPermission("UMKM_READ");
   const canReadSpb = await hasPermission("SPB_READ");
@@ -26,14 +27,16 @@ export default async function DanSosParLayout({ children }: { children: ReactNod
   const canApprovePastor = await hasPermission("APPROVE_SPB_PASTOR");
   const canRealize = await hasPermission("REALIZE_SPB");
 
+  const canApproveAny = canReviewPic || canApproveTpdsp || canApprovePastor || canRealize;
+
   const actionableStatuses: SpbStatus[] = [];
   if (canReviewPic) actionableStatuses.push(SpbStatus.SUBMITTED);
   if (canApproveTpdsp) actionableStatuses.push(SpbStatus.REVIEW_PIC);
   if (canApprovePastor) actionableStatuses.push(SpbStatus.APPROVED_TPDSP);
   if (canRealize) actionableStatuses.push(SpbStatus.APPROVED_PASTOR);
 
-  let pendingApprovalCount = 0;
-  if (actionableStatuses.length > 0) {
+  let pendingApprovalCount: number | undefined = undefined;
+  if (canApproveAny && actionableStatuses.length > 0) {
     pendingApprovalCount = await prisma.spbRequest.count({
       where: {
         ...whereClause,

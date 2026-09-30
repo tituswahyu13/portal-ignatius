@@ -18,7 +18,7 @@ interface DanSosParSidebarProps {
   userName: string;
   roleName: string;
   initials: string;
-  pendingApprovalCount: number;
+  pendingApprovalCount?: number;
 }
 
 export function DanSosParSidebar({

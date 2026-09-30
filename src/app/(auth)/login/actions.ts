@@ -72,8 +72,24 @@ export async function loginWithGoogle() {
   }
 }
 
+export async function loginAsGuest() {
+  const cookieStore = cookies();
+  cookieStore.set("ignatius_guest_session", "true", {
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  });
+
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
 export async function logout() {
   const cookieStore = cookies();
+  cookieStore.delete("ignatius_guest_session");
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -91,7 +107,12 @@ export async function logout() {
     }
   );
 
-  await supabase.auth.signOut();
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    // Ignore if no supabase session was active
+  }
+
   revalidatePath("/", "layout");
   redirect("/login");
 }

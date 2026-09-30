@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { db as prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/permissions";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user || (user as any).isGuest) {
+      return NextResponse.json([]);
     }
 
     const notifications = await prisma.notification.findMany({
-      where: { userId: user.id },
+      where: { userId: BigInt(user.id) },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || (user as any).isGuest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -42,7 +44,7 @@ export async function PATCH(req: NextRequest) {
     if (markAll) {
       await prisma.notification.updateMany({
         where: { 
-          userId: user.id,
+          userId: BigInt(user.id),
           isRead: false
         },
         data: { isRead: true },
@@ -53,7 +55,7 @@ export async function PATCH(req: NextRequest) {
     if (notificationId) {
       // Verify ownership before updating
       const notification = await prisma.notification.findFirst({
-        where: { id: BigInt(notificationId), userId: user.id }
+        where: { id: BigInt(notificationId), userId: BigInt(user.id) }
       });
 
       if (!notification) {

@@ -38,11 +38,14 @@ export function UserProfileMenu({ userName, roleName, initials }: UserProfileMen
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)} className="cursor-pointer">
-            Ubah Password
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {roleName !== "Mode Transparansi" && (
+            <>
+              <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)} className="cursor-pointer">
+                Ubah Password
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <form action={logout}>
             <button type="submit" className="w-full text-left">
               <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground cursor-pointer">

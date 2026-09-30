@@ -34,10 +34,12 @@ export default async function UmkmManagementPage({
             Kelola pendaftaran UMKM. Sistem akan otomatis menentukan kelayakan berdasarkan Aset dan Omset.
           </p>
         </div>
-        <CreateUmkmDialog 
-          lingkungan={lingkungan}
-          restriction={restriction}
-        />
+        {canWrite && (
+          <CreateUmkmDialog 
+            lingkungan={lingkungan}
+            restriction={restriction}
+          />
+        )}
       </div>
 
       <UmkmTable 

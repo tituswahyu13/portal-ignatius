@@ -2,6 +2,7 @@
 
 import { db as prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser, hasPermission } from "@/lib/auth/permissions";
 
 // --- INTENSI ACCOUNT ACTIONS ---
 
@@ -24,6 +25,15 @@ export async function getIntensiAccounts() {
 
 export async function createIntensiAction(formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("INTENSI_CREATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin membuat akun intensi." };
+    }
+
     const kodeAccount = formData.get("kodeAccount") as string;
     const namaIntensi = formData.get("namaIntensi") as string;
     const saldoAwal = parseFloat(formData.get("saldo") as string || "0");
@@ -58,6 +68,15 @@ export async function createIntensiAction(formData: FormData) {
 
 export async function updateIntensiAction(id: number, formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("INTENSI_UPDATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin mengubah akun intensi." };
+    }
+
     const kodeAccount = formData.get("kodeAccount") as string;
     const namaIntensi = formData.get("namaIntensi") as string;
     const saldo = parseFloat(formData.get("saldo") as string || "0");
@@ -85,6 +104,15 @@ export async function updateIntensiAction(id: number, formData: FormData) {
 
 export async function deleteIntensiAction(id: number) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("INTENSI_DELETE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin menghapus akun intensi." };
+    }
+
     await prisma.intensiAccount.delete({
       where: { id }
     });
@@ -124,6 +152,15 @@ export async function getMutations() {
 
 export async function createMutationAction(formData: FormData) {
   try {
+    const user = await getCurrentUser();
+    if (!user || (user as any).isGuest) {
+      return { success: false, error: "Akses ditolak: Anda harus login dengan akun pengurus." };
+    }
+    const allowed = await hasPermission("MUTASI_CREATE");
+    if (!allowed) {
+      return { success: false, error: "Akses ditolak: Anda tidak memiliki izin mencatat mutasi kas." };
+    }
+
     const intensiId = parseInt(formData.get("intensiId") as string);
     const type = formData.get("type") as "IN" | "OUT";
     const amount = parseFloat(formData.get("amount") as string);
@@ -150,7 +187,7 @@ export async function createMutationAction(formData: FormData) {
           sourceType,
           referenceId,
           description,
-          // createdBy: TODO (ambil dari session)
+          createdBy: BigInt(user.id)
         }
       });
 
