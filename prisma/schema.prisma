@@ -169,6 +169,7 @@ model KpsData {
   totalSkor           Int       @default(0) @map("total_skor")
   persentaseKelayakan Decimal   @default(0) @map("persentase_kelayakan") @db.Decimal(5, 2)
   statusKeluarga      String    @default("Prasejahtera") @map("status_keluarga") @db.VarChar(50)
+  catatanKhusus       String?   @map("catatan_khusus") @db.Text
   createdAt           DateTime  @default(now()) @map("created_at")
   createdBy           BigInt?   @map("created_by")
   updatedAt           DateTime? @updatedAt @map("updated_at")

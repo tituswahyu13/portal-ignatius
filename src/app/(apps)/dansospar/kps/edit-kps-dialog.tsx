@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateKpsAction, getUmatByLingkungan } from "./actions";
@@ -270,6 +271,17 @@ export function EditKpsDialog({ kps, lingkungan }: { kps: any, lingkungan: any[]
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Catatan Khusus (Opsional)</Label>
+            <Textarea
+              name="catatanKhusus"
+              placeholder="Catatan kondisi khusus keluarga, riwayat sakit, tanggungan khusus, atau keterangan pendukung lainnya..."
+              defaultValue={kps.catatanKhusus || ""}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">Informasi tambahan untuk pertimbangan kelayakan dan rekomendasi bantuan.</p>
           </div>
 
           <div className="flex justify-end pt-4">

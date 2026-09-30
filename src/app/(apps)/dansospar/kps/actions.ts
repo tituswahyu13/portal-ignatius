@@ -221,6 +221,7 @@ export async function createKpsAction(formData: FormData) {
     // Perbarui data umat jika ada input opsional yang diisi
     const pekerjaan = formData.get("pekerjaan") as string;
     const profesi = formData.get("profesi") as string;
+    const catatanKhusus = (formData.get("catatanKhusus") as string || "").trim() || null;
     
     const updateData: any = {};
     if (nik && nik.length === 16) updateData.nikEncrypted = encryptString(nik);
@@ -251,6 +252,7 @@ export async function createKpsAction(formData: FormData) {
           totalSkor,
           persentaseKelayakan,
           statusKeluarga,
+          catatanKhusus,
           deletedAt: null,
           deletedBy: null,
           updatedAt: new Date(),
@@ -271,7 +273,8 @@ export async function createKpsAction(formData: FormData) {
           skorSosial,
           totalSkor,
           persentaseKelayakan,
-          statusKeluarga
+          statusKeluarga,
+          catatanKhusus
         }
       }, user.id);
     }
@@ -451,6 +454,8 @@ export async function updateKpsAction(id: string, formData: FormData) {
       });
     }
 
+    const catatanKhusus = (formData.get("catatanKhusus") as string || "").trim() || null;
+
     const dataToUpdate: any = {
       lingkunganId,
       skorPekerjaan,
@@ -462,7 +467,8 @@ export async function updateKpsAction(id: string, formData: FormData) {
       skorSosial,
       totalSkor,
       persentaseKelayakan,
-      statusKeluarga
+      statusKeluarga,
+      catatanKhusus
     };
 
 

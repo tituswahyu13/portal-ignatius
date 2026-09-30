@@ -281,6 +281,14 @@ export function KpsTable({
                             <div className="flex justify-between"><span>Papan:</span> <span className="font-bold">{item.skorPapan}</span></div>
                           </div>
                         </div>
+                        {!isGuest && item.catatanKhusus && (
+                          <div className="pt-2 border-t">
+                            <span className="font-semibold text-muted-foreground block mb-1">Catatan Khusus:</span>
+                            <div className="p-2.5 rounded bg-muted/60 text-xs leading-relaxed whitespace-pre-wrap border border-muted">
+                              {item.catatanKhusus}
+                            </div>
+                          </div>
+                        )}
                         <div className="pt-4 border-t">
                           <KpsAnalysis kps={item} />
                         </div>

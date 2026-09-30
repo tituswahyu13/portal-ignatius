@@ -278,7 +278,27 @@ export async function exportSingleKpsPdf(kps: any) {
       cursorY += 12;
     });
 
-    cursorY += 15;
+    cursorY += 10;
+
+    // --- CATATAN KHUSUS (JIKA ADA) ---
+    if (kps.catatanKhusus && kps.catatanKhusus.trim()) {
+      if (cursorY + 50 > pageHeight - 40) {
+        doc.addPage();
+        cursorY = 40;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("E. CATATAN KHUSUS / KETERANGAN TAMBAHAN:", margin, cursorY);
+      cursorY += 12;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const splitNotes = doc.splitTextToSize(kps.catatanKhusus.trim(), contentWidth - 20);
+      doc.text(splitNotes, margin + 10, cursorY);
+      cursorY += splitNotes.length * 10 + 14;
+    } else {
+      cursorY += 5;
+    }
 
     // --- TANDA TANGAN & PENGESAHAN ---
     if (cursorY + 90 > pageHeight - 40) {
